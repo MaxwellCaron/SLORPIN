@@ -160,7 +160,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <a type="button" class="btn btn-link w-auto link-underline link-underline-opacity-0 link-underline-opacity-100-hover" data-id="{{ $box.ID }}" data-ip="{{ $box.IP }}">
+                            <a type="button" class="btn btn-link w-auto link-underline link-underline-opacity-0 link-underline-opacity-100-hover notes-button" data-id="{{ $box.ID }}" data-ip="{{ $box.IP }}">
                                 Edit...
                             </a>
                         </div>
@@ -393,7 +393,7 @@
         function renderBoxNote(e, id, ip) {
             e.preventDefault();
 
-            const url = "http://localhost/boxes/note/" + id;
+            const url = "/boxes/note/" + id;
             const textarea = document.getElementById('note-' + ip);
 
             fetch(url)
@@ -419,7 +419,7 @@
                 });
         }
 
-        document.querySelectorAll('.btn-link').forEach(button => {
+        document.querySelectorAll('.notes-button').forEach(button => {
             button.addEventListener('click', (event) => {
                 const id = button.getAttribute('data-id');
                 const ip = button.getAttribute('data-ip');
