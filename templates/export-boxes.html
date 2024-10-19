@@ -38,11 +38,11 @@
         <div class="accordion" id="box-{{ $box.ID }}" data-claim="{{ if ne $box.ClaimerID 0}}{{ $claimer := index $users $box.ClaimerID }}{{ $claimer.Name }}{{ else }}unclaimed{{ end }}" data-pwned="{{ or (gt $box.Usershells 0 ) (gt $box.Rootshells 0 ) }}">
             <div class="accordion-item">
                 <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $box.ID }}" aria-expanded="false" aria-controls="collapse-{{ $box.ID }}">
-                    <i class="fa-fw fa-solid {{ if or (gt $box.Usershells 0 ) (gt $box.Rootshells 0 ) }}fa-skull{{ else }}fa-shield{{ end }}"></i> <hr class="vr mx-2 my-0"> {{ $box.IP }}{{ if $box.Hostname }} <hr class="vr mx-2 my-0"> {{ $box.Hostname}}{{ end }} <hr class="vr mx-2 my-0"> Claim: {{ if ne $box.ClaimerID 0 }}{{ $claimer := index $users $box.ClaimerID }}{{ $claimer.Name }}{{ else }}Unclaimed{{ end }}
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $box.ID }}" aria-expanded="true" aria-controls="collapse-{{ $box.ID }}">
+                    <i class="fa-fw fa-solid {{ if or (gt $box.Usershells 0 ) (gt $box.Rootshells 0 ) }}fa-skull{{ else }}fa-shield{{ end }}"></i> <hr class="vr mx-2 my-0"> {{ $box.IP }}{{ if $box.Hostname }} ({{ $box.Hostname}}){{ end }} {{ if ne $box.ClaimerID 0 }}{{ $claimer := index $users $box.ClaimerID }}<hr class="vr mx-2 my-0"> Claimer: {{ $claimer.Name }}{{ end }}
                     </button>
                 </h2>
-                <div id="collapse-{{ $box.ID }}" class="accordion-collapse collapse" data-bs-parent="#box-{{ $box.ID }}">
+                <div id="collapse-{{ $box.ID }}" class="accordion-collapse collapse show" data-bs-parent="#box-{{ $box.ID }}">
                     <div class="accordion-body bg-light-subtle">
                         <div class="container">
                             <div class="row">

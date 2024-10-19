@@ -247,7 +247,7 @@
 
                 {{ $box.IP }}
                 {{ if $box.Hostname }} ({{ $box.Hostname }}) {{ end }}
-                {{ if $box.ClaimerID }}<hr class="vr mx-2 my-0"> Operator{{ $box.ClaimerID }}{{ end }}
+                {{ if ne $box.ClaimerID 0 }}{{ $claimer := index $users $box.ClaimerID }}<hr class="vr mx-2 my-0">{{ $claimer.Name }}{{ end }}
         </button>
         {{ end }}
     </div>
