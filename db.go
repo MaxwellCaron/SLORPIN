@@ -1,17 +1,12 @@
 package main
 
 import (
-	// "fmt"
-
-	// "github.com/gin-gonic/gin"
-	// "gorm.io/gorm/clause"
-
 	"sugmanats/models"
 )
 
-func dbGetBoxes () ([]models.Box, error) {
+func dbGetBoxes() ([]models.Box, error) {
 	var boxes []models.Box
-	
+
 	subquery := db.Table("boxes").Select("id,MAX(timestamp)").Group("ip")
 	result := db.Table("boxes").Joins("INNER JOIN (?) as grouped on boxes.id = grouped.id", subquery).Find(&boxes)
 
@@ -22,11 +17,17 @@ func dbGetBoxes () ([]models.Box, error) {
 	return boxes, nil
 }
 
-func dbGetPorts () (map[uint][]models.Port, error) {
+func dbGetPorts() (map[uint][]models.Port, error) {
 	var ports []models.Port
-	
-	subquery := db.Table("ports").Select("id,MAX(timestamp)").Group("box_id,port")
-	result := db.Table("ports").Joins("INNER JOIN (?) as grouped on ports.id = grouped.id", subquery).Find(&ports)
+
+	subquery := db.Table("ports").
+		Select("id, MAX(timestamp)").
+		Group("box_id, port")
+
+	result := db.Table("ports").
+		Joins("INNER JOIN (?) as grouped on ports.id = grouped.id", subquery).
+		Order("CAST(port AS UNSIGNED)").
+		Find(&ports)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -38,9 +39,9 @@ func dbGetPorts () (map[uint][]models.Port, error) {
 	return portMap, nil
 }
 
-func dbGetUser (id uint) (models.UserData, error) {
+func dbGetUser(id uint) (models.UserData, error) {
 	var user models.UserData
-	
+
 	result := db.First(&user, id)
 
 	if result.Error != nil {
@@ -50,9 +51,9 @@ func dbGetUser (id uint) (models.UserData, error) {
 	return user, nil
 }
 
-func dbGetUsers () (map[uint]models.UserData, error) {
+func dbGetUsers() (map[uint]models.UserData, error) {
 	var users []models.UserData
-	
+
 	result := db.Table("user_data").Find(&users)
 
 	if result.Error != nil {
@@ -68,7 +69,7 @@ func dbGetUsers () (map[uint]models.UserData, error) {
 
 func dbGetCredentials() ([]models.Credential, error) {
 	var credentials []models.Credential
-	
+
 	result := db.Table("credentials").Find(&credentials)
 
 	if result.Error != nil {
@@ -114,14 +115,14 @@ func dbAddUsers(users []models.UserData) error {
 			db.Create(&user)
 		}
 	}
-	
+
 	return nil
 }
 
 func dbUpdateBoxDetails(box *models.Box) error {
 	subquery := db.Model(box).Select("id,MAX(timestamp)").Group("ip")
-	result := db.Model(box).Select("usershells","rootshells","claimer_id").Joins("INNER JOIN (?) as grouped on boxes.id = grouped.id", subquery).Updates(box)
-	if result.Error != nil {	
+	result := db.Model(box).Select("usershells", "rootshells", "claimer_id").Joins("INNER JOIN (?) as grouped on boxes.id = grouped.id", subquery).Updates(box)
+	if result.Error != nil {
 		return result.Error
 	}
 	return nil
@@ -130,7 +131,7 @@ func dbUpdateBoxDetails(box *models.Box) error {
 func dbUpdateBoxNote(box *models.Box) error {
 	subquery := db.Model(box).Select("id,MAX(timestamp)").Group("ip")
 	result := db.Model(box).Select("note").Joins("INNER JOIN (?) as grouped on boxes.id = grouped.id", subquery).Updates(box)
-	if result.Error != nil {	
+	if result.Error != nil {
 		return result.Error
 	}
 	return nil
@@ -148,7 +149,7 @@ func dbEditSettings(user *models.UserData) error {
 
 func dbPropagateData(box models.Box) (models.Box, error) {
 	var oldBox models.Box
-	
+
 	// see if IP exists
 	if err := db.Table("boxes").Where("ip = (?)", box.IP).First(&models.Box{}).Error; err != nil {
 		return box, nil
@@ -169,9 +170,9 @@ func dbPropagateData(box models.Box) (models.Box, error) {
 	return box, nil
 }
 
-func dbGetTasks () ([]models.Task, error) {
+func dbGetTasks() ([]models.Task, error) {
 	var tasks []models.Task
-	
+
 	result := db.Preload("Assignee").Find(&tasks)
 
 	if result.Error != nil {
@@ -181,9 +182,9 @@ func dbGetTasks () ([]models.Task, error) {
 	return tasks, nil
 }
 
-func dbGetMyTasks (id uint) ([]models.Task, error) {
+func dbGetMyTasks(id uint) ([]models.Task, error) {
 	var tasks []models.Task
-	
+
 	result := db.Preload("tasks").Find(&tasks)
 
 	if result.Error != nil {
@@ -193,7 +194,7 @@ func dbGetMyTasks (id uint) ([]models.Task, error) {
 	return tasks, nil
 }
 
-func dbAddTask (task *models.Task) error {
+func dbAddTask(task *models.Task) error {
 	result := db.Create(&task)
 
 	if result.Error != nil {
