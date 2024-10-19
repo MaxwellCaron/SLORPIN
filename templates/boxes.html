@@ -151,7 +151,7 @@
                                         Notes
                                         </button>
                                     </h2>
-                                    <div id="collapseNote-{{ $box.IP }}" class="accordion-collapse collapse" data-bs-parent="#accordionNote-{{ $box.IP }}">
+                                    <div id="collapseNote-{{ $box.IP }}" class="accordion-collapse collapse show" data-bs-parent="#accordionNote-{{ $box.IP }}">
                                         <div id="box-note-rendered-{{ $box.IP }}" class="accordion-body">
                                             <div>
                                                 {{ if gt (len $box.Note) 0 }}{{ $box.Note | markdown }}{{ else }}No notes yet.{{ end }}
