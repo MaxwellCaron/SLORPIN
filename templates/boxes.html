@@ -160,11 +160,10 @@
                                     </div>
                                 </div>
                             </div>
-                            <a type="button" class="btn btn-link w-auto link-underline link-underline-opacity-0 link-underline-opacity-100-hover" data-bs-toggle="modal" data-bs-target="#box-note-edit-{{ $box.IP }}">
+                            <a type="button" class="btn btn-link w-auto link-underline link-underline-opacity-0 link-underline-opacity-100-hover" data-id="{{ $box.ID }}" data-ip="{{ $box.IP }}">
                                 Edit...
                             </a>
                         </div>
-
                         <div class="modal fade" id="box-note-edit-{{ $box.IP }}" tabindex="-1" aria-labelledby="box-note-edit-{{ $box.IP }}Label" aria-hidden="true">
                             <div class="modal-dialog modal-lg">
                                 <div class="modal-content">
@@ -173,13 +172,13 @@
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <form onsubmit="return editBoxNote(event, '{{ $box.ID }}', '{{ $box.IP }}')" id="box-note-edit-form-{{ $box.IP }}">
-                                            <textarea rows="20" name="note" class="form-control" placeholder="Write box notes here (supports markdown)"></textarea>
+                                        <form id="box-note-edit-form-{{ $box.IP }}">
+                                            <textarea id="note-{{ $box.IP }}" rows="20" name="note" class="form-control" placeholder="Write box notes here (supports markdown)"></textarea>
                                         </form>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                        <button type="submit" class="btn btn-primary" form="box-note-edit-form-{{ $box.IP }}">Save changes</button>
+                                        <button type="submit" class="btn btn-primary" form="box-note-edit-form-{{ $box.IP }}" onclick="editBoxNote(event, '{{ $box.ID }}', '{{ $box.IP }}')">Save changes</button>
                                     </div>
                                 </div>
                             </div>
@@ -389,6 +388,45 @@
             defaultPane.classList.remove("active");
         }
     })
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+        function renderBoxNote(e, id, ip) {
+            e.preventDefault();
+
+            const url = "http://localhost/boxes/note/" + id;
+            const textarea = document.getElementById('note-' + ip);
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Server response:', data);
+                    if (data.status) {
+                        textarea.value = data.note;
+                        const modal = new bootstrap.Modal(document.getElementById('box-note-edit-' + ip));
+                        modal.show();
+                    } else {
+                        createToast("Failed to load the note", "bg-danger");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    createToast("An error occurred while loading the note", "bg-danger");
+                });
+        }
+
+        document.querySelectorAll('.btn-link').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const id = button.getAttribute('data-id');
+                const ip = button.getAttribute('data-ip');
+                renderBoxNote(event, id, ip);
+            });
+        });
+    });
 
     function createBoxTab(ip) {
         box = document.querySelector(`[data-box-tab="${ip}"]`)

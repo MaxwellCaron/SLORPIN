@@ -39,6 +39,15 @@ func dbGetPorts() (map[uint][]models.Port, error) {
 	return portMap, nil
 }
 
+func dbGetNote(id uint) (string, error) {
+	var note string
+	err := db.Table("boxes").Select("note").Where("id = ?", id).Row().Scan(&note)
+	if err != nil {
+		return "", err
+	}
+	return note, nil
+}
+
 func dbGetUser(id uint) (models.UserData, error) {
 	var user models.UserData
 

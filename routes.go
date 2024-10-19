@@ -1,20 +1,20 @@
 package main
 
 import (
-	"net/http"
 	"bytes"
-	"mime/multipart"
-	"log"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
-	"encoding/xml"
-	"encoding/json"
+	"log"
+	"mime/multipart"
+	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/BurntSushi/toml"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 
 	"sugmanats/models"
 )
@@ -33,7 +33,7 @@ func addPrivateRoutes(g *gin.RouterGroup) {
 	g.GET("/settings", viewSettings)
 	g.POST("/settings/edit/:userId", editSettings)
 	g.GET("/sse", stream.serveHTTP(), sse)
-	
+
 	/* inventory */
 	// boxes
 	g.GET("/boxes", viewBoxes)
@@ -41,6 +41,7 @@ func addPrivateRoutes(g *gin.RouterGroup) {
 	g.POST("/boxes/upload", uploadNmap)
 	g.POST("/boxes/edit/details/:boxId", editBoxDetails)
 	g.POST("/boxes/edit/note/:boxId", editBoxNote)
+	g.GET("/boxes/note/:boxId", viewBoxNote)
 	g.GET("/api/boxes", getBoxes)
 
 	// credentials
@@ -71,14 +72,14 @@ func pageData(c *gin.Context, title string, ginMap gin.H) gin.H {
 
 // public routes
 
-func viewIndex (c *gin.Context) {
+func viewIndex(c *gin.Context) {
 	if !getUser(c).IsValid() {
 		c.Redirect(http.StatusSeeOther, "/login")
 	}
 	c.HTML(http.StatusOK, "index.html", pageData(c, "SUGMANATS", nil))
 }
 
-func viewLogin (c *gin.Context) {
+func viewLogin(c *gin.Context) {
 	if getUser(c).IsValid() {
 		c.Redirect(http.StatusSeeOther, "/dashboard")
 	}
@@ -87,16 +88,16 @@ func viewLogin (c *gin.Context) {
 
 // private routes
 
-func viewDashboard (c *gin.Context) {
+func viewDashboard(c *gin.Context) {
 	boxes, err := dbGetBoxes()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "dashboard.html", pageData(c, "Export Boxes", gin.H{"error": err}))
 		return
 	}
 
-	pwnCount 	:= 0
-	usershells 	:= 0
-	rootshells 	:= 0
+	pwnCount := 0
+	usershells := 0
+	rootshells := 0
 	for _, box := range boxes {
 		if box.Usershells > 0 || box.Rootshells > 0 {
 			pwnCount++
@@ -104,17 +105,17 @@ func viewDashboard (c *gin.Context) {
 			rootshells += box.Rootshells
 		}
 	}
-	c.HTML(http.StatusOK, "dashboard.html", pageData(c, "Dashboard", gin.H{"boxes": boxes, "pwnCount": pwnCount, "percent": (100*float32(pwnCount)/float32(len(boxes))), "usershells": usershells, "rootshells": rootshells}))
+	c.HTML(http.StatusOK, "dashboard.html", pageData(c, "Dashboard", gin.H{"boxes": boxes, "pwnCount": pwnCount, "percent": (100 * float32(pwnCount) / float32(len(boxes))), "usershells": usershells, "rootshells": rootshells}))
 }
 
-func viewSettings (c *gin.Context) {
+func viewSettings(c *gin.Context) {
 	user := getUser(c)
 	c.HTML(http.StatusOK, "settings.html", pageData(c, "Settings", gin.H{"user": user}))
 }
 
-func editSettings (c *gin.Context) {
+func editSettings(c *gin.Context) {
 	user := getUser(c)
-	user.Color 	= c.PostForm("color")
+	user.Color = c.PostForm("color")
 	err := dbEditSettings(&user)
 
 	if err != nil {
@@ -122,10 +123,10 @@ func editSettings (c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": true, "message":"Saved changes!"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Saved changes!"})
 }
 
-func viewBoxes (c *gin.Context) {
+func viewBoxes(c *gin.Context) {
 	boxes, err := dbGetBoxes()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "export-boxes.html", pageData(c, "Export Boxes", gin.H{"error": err}))
@@ -144,7 +145,7 @@ func viewBoxes (c *gin.Context) {
 	c.HTML(http.StatusOK, "boxes.html", pageData(c, "Boxes", gin.H{"boxes": boxes, "ports": ports, "users": users}))
 }
 
-func viewExportBoxes (c *gin.Context) {
+func viewExportBoxes(c *gin.Context) {
 	boxes, err := dbGetBoxes()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "export-boxes.html", pageData(c, "Export Boxes", gin.H{"error": err}))
@@ -163,7 +164,7 @@ func viewExportBoxes (c *gin.Context) {
 	c.HTML(http.StatusOK, "export-boxes.html", pageData(c, "Export Boxes", gin.H{"boxes": boxes, "ports": ports, "users": users}))
 }
 
-func viewAbout (c *gin.Context) {
+func viewAbout(c *gin.Context) {
 	buf := new(bytes.Buffer)
 	if err := toml.NewEncoder(buf).Encode(tomlConf); err != nil {
 		c.HTML(http.StatusInternalServerError, "settings.html", pageData(c, "Settings", gin.H{"error": err}))
@@ -173,10 +174,10 @@ func viewAbout (c *gin.Context) {
 }
 
 type NmapUpload struct {
-    Files []*multipart.FileHeader `form:"files" binding:"required"`
+	Files []*multipart.FileHeader `form:"files" binding:"required"`
 }
 
-func uploadNmap (c *gin.Context) {
+func uploadNmap(c *gin.Context) {
 	var form NmapUpload
 	err := c.ShouldBind(&form)
 
@@ -191,21 +192,24 @@ func uploadNmap (c *gin.Context) {
 	var dataErrors []string
 	var fileErrors int
 	var boxCount int
-	 
+
 	for _, formFile := range form.Files {
 		errorOnIteration := false
 		openedFile, _ := formFile.Open()
 		file, _ := io.ReadAll(openedFile)
 
-		xml.Unmarshal(file, &nmapXML)
+		err := xml.Unmarshal(file, &nmapXML)
+		if err != nil {
+			return
+		}
 		log.Println(fmt.Sprintf("Upload %s success!", formFile.Filename))
 		for _, host := range nmapXML.Host {
 			boxCount++
 
-			box = models.Box {
+			box = models.Box{
 				Status: host.Status.State,
 			}
-			
+
 			for _, address := range host.Address {
 				if address.Addrtype == "ipv4" {
 					box.IP = address.Addr
@@ -220,7 +224,7 @@ func uploadNmap (c *gin.Context) {
 				box.Hostname = hostname[1:]
 			}
 			box, err = dbPropagateData(box)
-			if err != nil {  // tbh idk if this even needs error checking, but who knows...
+			if err != nil { // tbh idk if this even needs error checking, but who knows...
 				dataErrors = append(dataErrors, errors.Wrap(err, "Data propagation error:").Error())
 				errorOnIteration = true
 			}
@@ -228,18 +232,18 @@ func uploadNmap (c *gin.Context) {
 
 			for _, p := range host.Ports.Port {
 				port = models.Port{
-					Port: p.Portid,
-					BoxID: box.ID,
+					Port:     p.Portid,
+					BoxID:    box.ID,
 					Protocol: p.Protocol,
-					State: p.State.State,
-					Service: p.Service.Name,
-					Tunnel: p.Service.Tunnel,
-					Version: p.Service.Version,
+					State:    p.State.State,
+					Service:  p.Service.Name,
+					Tunnel:   p.Service.Tunnel,
+					Version:  p.Service.Version,
 				}
 				db.Create(&port)
 			}
 		}
-		if (errorOnIteration) {
+		if errorOnIteration {
 			fileErrors++
 		}
 	}
@@ -248,15 +252,15 @@ func uploadNmap (c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": err})
 		}
 	}
-	sendSSE([]string{"boxes","ports","dirty"})
-	c.JSON(http.StatusOK, gin.H{"status": true, "message":fmt.Sprintf("Received %d file(s) successfully! Found %d box(es) successfully.", len(form.Files) - fileErrors, boxCount - len(dataErrors))})
+	sendSSE([]string{"boxes", "ports", "dirty"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": fmt.Sprintf("Received %d file(s) successfully! Found %d box(es) successfully.", len(form.Files)-fileErrors, boxCount-len(dataErrors))})
 }
 
-func editBoxDetails (c *gin.Context) {
-	boxId, err		:= strconv.ParseUint(c.Param("boxId"), 10, 32)
-	claimerId, err	:= strconv.ParseUint(c.PostForm("claim"), 10, 32)
-	usershells, err	:= strconv.Atoi(c.PostForm("usershells"))
-	rootshells, err	:= strconv.Atoi(c.PostForm("rootshells"))
+func editBoxDetails(c *gin.Context) {
+	boxId, err := strconv.ParseUint(c.Param("boxId"), 10, 32)
+	claimerId, err := strconv.ParseUint(c.PostForm("claim"), 10, 32)
+	usershells, err := strconv.Atoi(c.PostForm("usershells"))
+	rootshells, err := strconv.Atoi(c.PostForm("rootshells"))
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
@@ -264,10 +268,10 @@ func editBoxDetails (c *gin.Context) {
 	}
 
 	updatedBox := models.Box{
-		ID: 		uint(boxId),
+		ID:         uint(boxId),
 		Usershells: usershells,
 		Rootshells: rootshells,
-		ClaimerID:	uint(claimerId),
+		ClaimerID:  uint(claimerId),
 	}
 
 	err = dbUpdateBoxDetails(&updatedBox)
@@ -276,12 +280,12 @@ func editBoxDetails (c *gin.Context) {
 		return
 	}
 	sendSSE([]string{"boxes"})
-	c.JSON(http.StatusOK, gin.H{"status": true, "message":"Updated box details successfully!"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Updated box details successfully!"})
 }
 
-func editBoxNote (c *gin.Context) {
-	boxId, err		:= strconv.ParseUint(c.Param("boxId"), 10, 32)
-	note 			:= c.PostForm("note")
+func editBoxNote(c *gin.Context) {
+	boxId, err := strconv.ParseUint(c.Param("boxId"), 10, 32)
+	note := c.PostForm("note")
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
@@ -289,8 +293,8 @@ func editBoxNote (c *gin.Context) {
 	}
 
 	updatedBox := models.Box{
-		ID: 		uint(boxId),
-		Note: 		note,
+		ID:   uint(boxId),
+		Note: note,
 	}
 
 	err = dbUpdateBoxNote(&updatedBox)
@@ -298,10 +302,23 @@ func editBoxNote (c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": true, "message":"Updated box note successfully!"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Updated box note successfully!"})
 }
 
-func viewCredentials (c *gin.Context) {
+func viewBoxNote(c *gin.Context) {
+	idParam := c.Param("boxId")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+
+	note, err := dbGetNote(uint(id))
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", pageData(c, "Note", gin.H{"error": err}))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "note": note})
+}
+
+func viewCredentials(c *gin.Context) {
 	boxes, err := dbGetBoxes()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "export-boxes.html", pageData(c, "Export Boxes", gin.H{"error": err}))
@@ -320,15 +337,15 @@ func viewCredentials (c *gin.Context) {
 	c.HTML(http.StatusOK, "credentials.html", pageData(c, "Credentials", gin.H{"boxes": boxes, "ports": ports, "credentials": credentials}))
 }
 
-func addCredential (c *gin.Context) {
-	username 		:= c.PostForm("username")
-	password 		:= c.PostForm("password")
-	note	 		:= c.PostForm("note")
+func addCredential(c *gin.Context) {
+	username := c.PostForm("username")
+	password := c.PostForm("password")
+	note := c.PostForm("note")
 
 	newCredential := models.Credential{
-		Username:	username,
-		Password:	password,
-		Note: 		note,
+		Username: username,
+		Password: password,
+		Note:     note,
 	}
 
 	err := dbAddCredential(&newCredential)
@@ -336,24 +353,24 @@ func addCredential (c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": true, "message":"Added credential successfully!"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Added credential successfully!"})
 }
 
-func editCredential (c *gin.Context) {
-	credentialId, err		:= strconv.ParseUint(c.Param("credentialId"), 10, 32)
-	username 				:= c.PostForm("username")
-	password 				:= c.PostForm("password")
-	note	 				:= c.PostForm("note")
+func editCredential(c *gin.Context) {
+	credentialId, err := strconv.ParseUint(c.Param("credentialId"), 10, 32)
+	username := c.PostForm("username")
+	password := c.PostForm("password")
+	note := c.PostForm("note")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
 		return
 	}
 
 	updatedCredential := models.Credential{
-		ID:			uint(credentialId),
-		Username:	username,
-		Password:	password,
-		Note: 		note,
+		ID:       uint(credentialId),
+		Username: username,
+		Password: password,
+		Note:     note,
 	}
 
 	err = dbEditCredential(&updatedCredential)
@@ -361,11 +378,11 @@ func editCredential (c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": true, "message":"Edited credential successfully!"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Edited credential successfully!"})
 }
 
-func deleteCredential (c *gin.Context) {
-	credentialId, err		:= strconv.ParseUint(c.Param("credentialId"), 10, 32)
+func deleteCredential(c *gin.Context) {
+	credentialId, err := strconv.ParseUint(c.Param("credentialId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
 		return
@@ -376,10 +393,10 @@ func deleteCredential (c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": true, "message":"Deleted credential successfully!"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Deleted credential successfully!"})
 }
 
-func sse (c *gin.Context) {
+func sse(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
@@ -438,7 +455,7 @@ func getBoxes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "boxIds": boxIds, "boxes": jsonBoxes, "users": users})
 }
 
-func viewTasks (c *gin.Context) {
+func viewTasks(c *gin.Context) {
 	users, err := dbGetUsers()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "tasks.html", pageData(c, "Tasks", gin.H{"error": err}))
@@ -453,13 +470,13 @@ func viewTasks (c *gin.Context) {
 }
 
 type TaskForm struct {
-    Assignee 	*int `form:"assignee" binding:"required"`
-	Note		string `form:"note" binding:"required"`
-	Status		string `form:"status" binding:"required"`
-	DueTime		time.Time `form:"due-time"`
+	Assignee *int      `form:"assignee" binding:"required"`
+	Note     string    `form:"note" binding:"required"`
+	Status   string    `form:"status" binding:"required"`
+	DueTime  time.Time `form:"due-time"`
 }
 
-func addTask (c *gin.Context) {
+func addTask(c *gin.Context) {
 	var form TaskForm
 	err := c.ShouldBind(&form)
 	if err != nil {
@@ -469,8 +486,8 @@ func addTask (c *gin.Context) {
 
 	newTask := models.Task{
 		AssigneeID: uint(*form.Assignee),
-		Status:		form.Status,
-		Note: 		form.Note,
+		Status:     form.Status,
+		Note:       form.Note,
 	}
 	if !form.DueTime.IsZero() {
 		newTask.DueTime = form.DueTime
@@ -481,24 +498,24 @@ func addTask (c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": true, "message":"Added task successfully!"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Added task successfully!"})
 }
 
-func editTask (c *gin.Context) {
+func editTask(c *gin.Context) {
 	var form TaskForm
 	err := c.ShouldBind(&form)
-	taskId, err	:= strconv.ParseUint(c.Param("taskId"), 10, 32)
+	taskId, err := strconv.ParseUint(c.Param("taskId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
 		return
 	}
 
 	newTask := models.Task{
-		ID:			uint(taskId),
-		DueTime:	form.DueTime,
-		Status:		form.Status,
-		Note: 		form.Note,
-		AssigneeID:	uint(*form.Assignee),
+		ID:         uint(taskId),
+		DueTime:    form.DueTime,
+		Status:     form.Status,
+		Note:       form.Note,
+		AssigneeID: uint(*form.Assignee),
 	}
 
 	err = dbEditTask(&newTask)
@@ -506,11 +523,11 @@ func editTask (c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": true, "message":"Edited task successfully!"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Edited task successfully!"})
 }
 
-func deleteTask (c *gin.Context) {
-	taskId, err		:= strconv.ParseUint(c.Param("taskId"), 10, 32)
+func deleteTask(c *gin.Context) {
+	taskId, err := strconv.ParseUint(c.Param("taskId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
 		return
@@ -521,5 +538,5 @@ func deleteTask (c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": true, "message":"Deleted task successfully!"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Deleted task successfully!"})
 }
