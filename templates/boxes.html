@@ -10,7 +10,7 @@
 <div class="mt-4 container">
     <div class="row">
         <ul class="nav nav-tabs mb-4" role="tablist" id="tab-list">
-            
+
         </ul>
     </div>
     <div class="row">
@@ -164,7 +164,7 @@
                                 Edit...
                             </a>
                         </div>
-                        
+
                         <div class="modal fade" id="box-note-edit-{{ $box.IP }}" tabindex="-1" aria-labelledby="box-note-edit-{{ $box.IP }}Label" aria-hidden="true">
                             <div class="modal-dialog modal-lg">
                                 <div class="modal-content">
@@ -190,7 +190,7 @@
             {{ end }}
         </div>
     </div>
-</div> 
+</div>
 <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasBoxList" aria-labelledby="offcanvasBoxListLabel">
   <div class="offcanvas-header">
     <h5 class="offcanvas-title" id="offcanvasBoxListLabel">Actions</h5>
@@ -211,7 +211,7 @@
         <input type="radio" class="btn-check" name="all-filter" id="all-boxes" value="all" autocomplete="off" checked>
         <label class="btn btn-primary rounded-pill" for="all-boxes">All Boxes</label>
         <div class="vr"></div>
-        
+
         <input type="radio" class="btn-check" name="claim-filter" id="claimed" value="claimed" autocomplete="off">
         <label class="btn btn-primary rounded-pill" for="claimed">All Claimed Boxes</label>
 
@@ -225,7 +225,7 @@
 
         <input type="radio" class="btn-check" name="pwn-filter" id="unpwned" value="unpwned" autocomplete="off">
         <label class="btn btn-primary rounded-pill" for="unpwned">Unpwned Boxes</label>
-        
+
         <input type="radio" class="btn-check" name="pwn-filter" id="pwned" value="pwned" autocomplete="off">
         <label class="btn btn-primary rounded-pill" for="pwned">Pwned Boxes</label>
     </div>
@@ -233,9 +233,23 @@
     <h5 class="mb-4">Boxes</h5>
     <div class="list-group list-group-flush" id="box-bar">
         {{ range $box := $boxes }}
-        <button class="list-group-item list-group-item-action" id="v-pills-{{ $box.IP }}-tab" data-claim="{{ if ne $box.ClaimerID 0}}{{ $claimer := index $users $box.ClaimerID }}{{ $claimer.Name }}{{ else }}unclaimed{{ end }}" data-pwned="{{ or (gt $box.Usershells 0 ) (gt $box.Rootshells 0 ) }}" data-bs-toggle="pill" data-bs-target="#v-pills-{{ $box.IP }}" data-box-tab="box-tab-{{ $box.IP }}" type="button" role="tab" aria-controls="v-pills-{{ $box.IP }}" aria-selected="true" 
-        data-ports="{{ $boxPorts := index $ports $box.ID }}{{ range $index, $port := $boxPorts }}{{if $index}},{{end}}{{ $port.Port }}{{ end }}">
-            {{ $box.IP }}{{ if $box.Hostname }} <hr class="vr mx-2 my-0"> {{ $box.Hostname}}{{ end }}
+        <button class="list-group-item list-group-item-action"
+                id="v-pills-{{ $box.IP }}-tab"
+                data-claim="{{ if ne $box.ClaimerID 0}}{{ $claimer := index $users $box.ClaimerID }}{{ $claimer.Name }}{{ else }}unclaimed{{ end }}"
+                data-pwned="{{ or (gt $box.Usershells 0) (gt $box.Rootshells 0) }}"
+                data-bs-toggle="pill"
+                data-bs-target="#v-pills-{{ $box.IP }}"
+                data-box-tab="box-tab-{{ $box.IP }}"
+                type="button"
+                role="tab"
+                aria-controls="v-pills-{{ $box.IP }}"
+                aria-selected="true"
+                data-ports="{{ $boxPorts := index $ports $box.ID }}{{ range $index, $port := $boxPorts }}{{if $index}},{{end}}{{ $port.Port }}{{ end }}">
+
+                {{ $box.IP }}
+                {{ if $box.Hostname }} ({{ $box.Hostname }}) {{ end }}
+                {{ if and $box.Hostname $box.ClaimerID }}<hr class="vr mx-2 my-0">{{ end }}
+                {{ if $box.ClaimerID }} Operator{{ $box.ClaimerID }}{{ end }}
         </button>
         {{ end }}
     </div>
@@ -266,7 +280,7 @@
         </div>
       </div>
     </div>
-</div>  
+</div>
 
 <div class="modal fade" id="filterModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -293,7 +307,7 @@
         </div>
       </div>
     </div>
-</div>  
+</div>
 
 <script>
     const allRadio      = document.getElementById('all-boxes');
@@ -342,13 +356,13 @@
 
                 let claimBool = false;
                 let pwnBool = false;
-                
-                if ((allClaimedRadio.checked && box.getAttribute('data-claim') != "unclaimed") || 
+
+                if ((allClaimedRadio.checked && box.getAttribute('data-claim') != "unclaimed") ||
                     (yourClaimedRadio.checked && box.getAttribute('data-claim') == '{{ .user.Name }}') ||
                     (unClaimedRadio.checked && box.getAttribute('data-claim') == "unclaimed") ||
                     (!allClaimedRadio.checked && !yourClaimedRadio.checked && !unClaimedRadio.checked)) {
                     claimBool = true;
-                } 
+                }
                 if ((pwnedRadio.checked && box.getAttribute('data-pwned') == "true") ||
                     (unpwnedRadio.checked && box.getAttribute('data-pwned') == "false") ||
                     (!pwnedRadio.checked && !unpwnedRadio.checked)) {
@@ -399,9 +413,9 @@
             }
             if (!hash) {
                 defaultPane.classList.add("active")
-            } 
+            }
         })
-        
+
         newTab = document.createElement("button")
         newTab.id = ip
         newTab.classList.add("nav-link")
@@ -425,28 +439,28 @@
             if (document.getElementById(id) != null) {
                 return
             }
-            var hash = location.hash.replace(/^#/, ''); 
+            var hash = location.hash.replace(/^#/, '');
             if (hash) {
                 if (!hash.split(",").includes(id)) {
                     window.location.hash += ","+id;
-                } 
+                }
             } else {
                 window.location.hash += id;
             }
-                
+
             createBoxTab(id)
         })
     })
 
     // Javascript to enable link to tab (save state)
-    var hash = location.hash.replace(/^#/, ''); 
+    var hash = location.hash.replace(/^#/, '');
     if (hash) {
         defaultPane.classList.remove("active");
         for (const ip of hash.split(",")) {
             tab = createBoxTab(ip)
             tab.show()
         }
-    } 
+    }
 
     // sse and ajax
 
@@ -545,7 +559,7 @@
         url = "/boxes/upload";
 
         const form = document.forms[formid]
-        
+
         data = new FormData()
         for (const file of form.files.files) {
             data.append("files", file)
