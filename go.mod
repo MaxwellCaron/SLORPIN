@@ -1,4 +1,4 @@
-module sugmanats
+module slorpin
 
 go 1.20
 

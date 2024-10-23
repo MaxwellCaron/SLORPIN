@@ -1,7 +1,7 @@
 package main
 
 import (
-	"sugmanats/models"
+	"slorpin/models"
 )
 
 func dbGetBoxes() ([]models.Box, error) {

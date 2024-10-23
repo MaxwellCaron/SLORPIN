@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"sugmanats/models"
+	"slorpin/models"
 )
 
 // authRequired provides authentication middleware for ensuring that a user is logged in.

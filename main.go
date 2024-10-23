@@ -4,9 +4,9 @@ import (
 	"fmt"
 	// "io"
 	"log"
-	// "os"	
-	"net/http"
+	// "os"
 	"html/template"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
@@ -14,14 +14,14 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	"sugmanats/models"
+	"slorpin/models"
 )
 
 var (
-	tomlConf   	= &models.Config{}
-	configPath 	= "config.conf"
-	db			= &gorm.DB{}
-	stream		= NewSSEServer()
+	tomlConf   = &models.Config{}
+	configPath = "config.conf"
+	db         = &gorm.DB{}
+	stream     = NewSSEServer()
 )
 
 type ClientChan chan string
@@ -60,13 +60,12 @@ func main() {
 	// setup router
 	router := gin.Default()
 	router.SetFuncMap(template.FuncMap{
-        "markdown": models.RenderMarkdown,
-    })
+		"markdown": models.RenderMarkdown,
+	})
 	router.Static("/assets", "./assets")
 	router.LoadHTMLGlob("templates/*.html")
 	router.MaxMultipartMemory = 8 << 20 // 8Mib
 	initCookies(router)
-
 
 	// setup routes
 	router.NoRoute(func(c *gin.Context) {

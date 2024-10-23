@@ -16,7 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 
-	"sugmanats/models"
+	"slorpin/models"
 )
 
 func addPublicRoutes(g *gin.RouterGroup) {
@@ -76,7 +76,7 @@ func viewIndex(c *gin.Context) {
 	if !getUser(c).IsValid() {
 		c.Redirect(http.StatusSeeOther, "/login")
 	}
-	c.HTML(http.StatusOK, "index.html", pageData(c, "SUGMANATS", nil))
+	c.HTML(http.StatusOK, "index.html", pageData(c, "SLORPIN", nil))
 }
 
 func viewLogin(c *gin.Context) {
