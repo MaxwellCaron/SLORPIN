@@ -1,5 +1,5 @@
-# SUGMANATS
-Some Unhinged Guy Makes Another NMAP Aggregating Team Server
+# SLORPIN
+Some Lone Operator Remakes Program Intended for Nmap
 
 [Read more](https://gabrielfok.us/article/Creating-an-NMAP-Aggregator-with-Golang-Gin)
 
@@ -9,6 +9,6 @@ operation = "Desert Storm"
 # dbpath = "temp.db"      # rename database file
 
 [[admin]]
-name = "gabe"
+name = "operator1"
 pw = "password"
 ```
