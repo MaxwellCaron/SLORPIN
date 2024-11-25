@@ -42,7 +42,7 @@ type Nmaprun struct {
 				Type string `xml:"type,attr"`
 			} `xml:"hostname"`
 		}
-		Ports     struct {
+		Ports struct {
 			Extraports struct {
 				State        string `xml:"state,attr"`
 				Count        string `xml:"count,attr"`
@@ -70,12 +70,14 @@ type Nmaprun struct {
 					Conf      string `xml:"conf,attr"`
 					Tunnel    string `xml:"tunnel,attr"`
 					Cpe       string `xml:"cpe"`
+					Hostname  string `xml:"hostname,attr"`
+					Ostype    string `xml:"ostype,attr"`
 				} `xml:"service"`
 				Script []struct {
 					ID     string `xml:"id,attr"`
 					Output string `xml:"output,attr"`
 					Elem   struct {
-					Key  string `xml:"key,attr"`
+						Key string `xml:"key,attr"`
 					} `xml:"elem"`
 				} `xml:"script"`
 			} `xml:"port"`

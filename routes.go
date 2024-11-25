@@ -210,26 +210,38 @@ func uploadNmap(c *gin.Context) {
 				Status: host.Status.State,
 			}
 
+			// Extract the IP address
 			for _, address := range host.Address {
 				if address.Addrtype == "ipv4" {
 					box.IP = address.Addr
 				}
 			}
 
-			hostname := ""
-			for _, h := range host.Hostnames.Hostname {
-				hostname = fmt.Sprintf("%s,%s/%s", hostname, h.Name, h.Type)
+			// Extract the Hostname from the service if available
+			for _, p := range host.Ports.Port {
+				if p.Service.Hostname != "" {
+					box.Hostname = p.Service.Hostname
+					break
+				}
 			}
-			if len(hostname) > 2 {
-				box.Hostname = hostname[1:]
+
+			// Extract the OS type from the service if available
+			for _, p := range host.Ports.Port {
+				if p.Service.Ostype != "" {
+					box.OS = p.Service.Ostype
+					break
+				}
 			}
+
+			// Store the box
 			box, err = dbPropagateData(box)
-			if err != nil { // tbh idk if this even needs error checking, but who knows...
+			if err != nil {
 				dataErrors = append(dataErrors, errors.Wrap(err, "Data propagation error:").Error())
 				errorOnIteration = true
 			}
 			_ = db.Create(&box)
 
+			// Process ports
 			for _, p := range host.Ports.Port {
 				port = models.Port{
 					Port:     p.Portid,
