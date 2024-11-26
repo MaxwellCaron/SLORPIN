@@ -23,7 +23,7 @@
             <div class="tab-pane fade" id="v-pills-{{ $box.IP }}" role="tabpanel" aria-labelledby="v-pills-{{ $box.IP }}-tab" tabindex="0">
                 <div class="bg-light-subtle border border-light-subtle rounded-2 p-4 h-100">
 
-                    <h1>{{ $box.IP }}{{ if $box.Hostname }} <hr class="vr mx-2 my-0"> {{ $box.Hostname}}{{ end }}</h1>
+                    <h1>{{ $box.IP }}</h1>
 
                     <p class="host-info">{{ $box.OS }}</p>
                     <p class="host-info">{{ $box.Hostname }}</p>
@@ -151,23 +151,14 @@
                     </div>
                     <div class="row">
                         <div class="col">
-                            <div class="accordion" id="accordionNote-{{ $box.IP }}">
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNote-{{ $box.IP }}" aria-expanded="true" aria-controls="collapseNote-{{ $box.IP }}" style="border-bottom: 5px solid #343A40;">
-                                        <strong>Notes</strong>
-                                        </button>
-                                    </h2>
-                                    <div id="collapseNote-{{ $box.IP }}" class="accordion-collapse collapse show" data-bs-parent="#accordionNote-{{ $box.IP }}">
-                                        <div id="box-note-rendered-{{ $box.IP }}" class="accordion-body">
-                                            <div>
-                                                {{ if gt (len $box.Note) 0 }}{{ $box.Note | markdown }}{{ else }}No notes yet.{{ end }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <a type="button" class="btn btn-link w-auto link-underline link-underline-opacity-0 link-underline-opacity-100-hover notes-button" data-id="{{ $box.ID }}" data-ip="{{ $box.IP }}">
+                            <h3 style="font-weight: bold; margin-top: 20px">Notes</h3>
+                            <hr class="custom-line">
+                            <table class="table" style="margin-bottom: 0">
+                                <td>
+                                    {{ if gt (len $box.Note) 0 }}{{ $box.Note | markdown }}{{ else }}No notes yet.{{ end }}
+                                </td>
+                            </table>
+                            <a type="button" class="btn btn-link w-auto link-underline link-underline-opacity-0 link-underline-opacity-100-hover notes-button" data-id="{{ $box.ID }}" data-ip="{{ $box.IP }}" style="margin-top: 0">
                                 Edit...
                             </a>
                         </div>
