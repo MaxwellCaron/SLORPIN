@@ -22,54 +22,57 @@
             {{ $claimUser := index $users $box.ClaimerID }}
             <div class="tab-pane fade" id="v-pills-{{ $box.IP }}" role="tabpanel" aria-labelledby="v-pills-{{ $box.IP }}-tab" tabindex="0">
                 <div class="bg-light-subtle border border-light-subtle rounded-2 p-4 h-100">
+
                     <h1>{{ $box.IP }}{{ if $box.Hostname }} <hr class="vr mx-2 my-0"> {{ $box.Hostname}}{{ end }}</h1>
+
+                    <p class="host-info">{{ $box.OS }}</p>
+                    <p class="host-info">{{ $box.Hostname }}</p>
+                    <br>
+
                     <div class="row">
                         <div class="col col-lg-8">
-                            <table class="table border border-light-subtle">
-                                <tr>
-                                    <th>IP</th>
-                                    <td>{{ $box.IP }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Hostname</th>
-                                    <td>{{ $box.Hostname }}</td>
-                                </tr>
-                                <tr>
-                                    <th>OS</th>
-                                    <td>{{ $box.OS }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Ports</th>
-                                    <td>
-                                        <table class="table table-striped table-hover">
-                                            <tr>
-                                                <th>Port</th>
-                                                <th>Service</th>
-                                                <th>Version</th>
-                                                <th>Tunnel</th>
-                                            </tr>
-                                            {{ $boxPorts := index $ports $box.ID }}
-                                            {{ range $port := $boxPorts }}
-                                            <tr>
-                                                <td>
-                                                    {{ $port.Port }}/{{ $port.Protocol }}
-                                                </td>
-                                                <td>
-                                                    {{ $port.Service }}
-                                                </td>
-                                                <td>
-                                                    {{ $port.Version}}
-                                                </td>
-                                                <td>
-                                                    {{ $port.Tunnel }}
-                                                </td>
-                                            </tr>
-                                            {{ end }}
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
+                            <div class="mt-3">
+                                <div class="distributed bolded">
+                                    <span>Port</span>
+                                    <span>Service</span>
+                                    <span>Version</span>
+                                </div>
+                                <hr class="custom-line">
+                                <table class="ports">
+                                    {{ $boxPorts := index $ports $box.ID }}
+                                    {{ range $port := $boxPorts }}
+                                    <tr>
+                                        <td colspan="2">
+                                            <div class="accordion" id="accordionNote-{{ $port.Port }}">
+                                                <div class="accordion-item">
+                                                    <h2 class="accordion-header">
+                                                        <button aria-controls="collapseNote-{{ $port.Port }}"
+                                                                aria-expanded="false" class="port-button accordion-button collapsed distributed"
+                                                                data-bs-target="#collapseNote-{{ $port.Port }}"
+                                                                data-bs-toggle="collapse"
+                                                                type="button">
+                                                            <span>{{ $port.Port }}/{{ $port.Protocol }}</span>
+                                                            <span>{{ $port.Service }}</span>
+                                                            <span>{{ $port.Version }}</span>
+                                                        </button>
+                                                    </h2>
+                                                    <div class="accordion-collapse collapse"
+                                                         data-bs-parent="#accordionNote-{{ $port.Port }}"
+                                                         id="collapseNote-{{ $port.Port }}">
+                                                        <div class="accordion-body"
+                                                             id="box-note-rendered-{{ $port.Port }}">
+                                                            <pre>{{ $port.Fingerprint }}</pre>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {{ end }}
+                                </table>
+                            </div>
                         </div>
+
                         <div class="w-100 m-0 d-lg-none d-block"></div>
                         <div class="col">
                             <div class="d-flex flex-column gap-4">

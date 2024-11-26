@@ -62,16 +62,17 @@ type Nmaprun struct {
 					ReasonTtl string `xml:"reason_ttl,attr"`
 				} `xml:"state"`
 				Service struct {
-					Name      string `xml:"name,attr"`
-					Product   string `xml:"product,attr"`
-					Version   string `xml:"version,attr"`
-					Extrainfo string `xml:"extrainfo,attr"`
-					Method    string `xml:"method,attr"`
-					Conf      string `xml:"conf,attr"`
-					Tunnel    string `xml:"tunnel,attr"`
-					Cpe       string `xml:"cpe"`
-					Hostname  string `xml:"hostname,attr"`
-					Ostype    string `xml:"ostype,attr"`
+					Name        string `xml:"name,attr"`
+					Product     string `xml:"product,attr"`
+					Version     string `xml:"version,attr"`
+					Extrainfo   string `xml:"extrainfo,attr"`
+					Method      string `xml:"method,attr"`
+					Conf        string `xml:"conf,attr"`
+					Tunnel      string `xml:"tunnel,attr"`
+					Fingerprint string `xml:"servicefp,attr"`
+					Cpe         string `xml:"cpe"`
+					Hostname    string `xml:"hostname,attr"`
+					Ostype      string `xml:"ostype,attr"`
 				} `xml:"service"`
 				Script []struct {
 					ID     string `xml:"id,attr"`
