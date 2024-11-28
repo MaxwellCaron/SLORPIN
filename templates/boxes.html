@@ -59,9 +59,7 @@
 
 <div class="mt-4 container">
     <div class="row">
-        <ul class="nav nav-tabs mb-4" role="tablist" id="tab-list">
-
-        </ul>
+        <ul class="nav nav-tabs mb-4" role="tablist" id="tab-list"></ul>
     </div>
     <div class="row">
         <div class="tab-content" id="v-pills-tabContent">
@@ -73,87 +71,50 @@
             <div class="tab-pane fade" id="v-pills-{{ $box.IP }}" role="tabpanel" aria-labelledby="v-pills-{{ $box.IP }}-tab" tabindex="0">
                 <div class="bg-light-subtle border border-light-subtle rounded-2 p-4 h-100">
 
-                    <h1>{{ $box.IP }}</h1>
-
-                    <p class="host-info">{{ $box.OS }}</p>
-                    <p class="host-info">{{ $box.Hostname }}</p>
-                    <br>
-
                     <div class="row">
-                        <div class="col col-lg-8">
-                            <div class="mt-3">
-                                <div class="distributed bolded">
-                                    <span>Port</span>
-                                    <span>Service</span>
-                                    <span>Version</span>
-                                </div>
-                                <hr class="custom-line">
-                                <table class="ports">
-                                    {{ $boxPorts := index $ports $box.ID }}
-                                    {{ range $port := $boxPorts }}
-                                    <tr>
-                                        <td colspan="2">
-                                            <div class="accordion" id="accordionNote-{{ $port.Port }}">
-                                                <div class="accordion-item">
-                                                    <h2 class="accordion-header">
-                                                        <button aria-controls="collapseNote-{{ $port.Port }}"
-                                                                aria-expanded="false" class="port-button accordion-button collapsed distributed"
-                                                                data-bs-target="#collapseNote-{{ $port.Port }}"
-                                                                data-bs-toggle="collapse"
-                                                                type="button">
-                                                            <span>{{ $port.Port }}/{{ $port.Protocol }}</span>
-                                                            <span>{{ $port.Service }}</span>
-                                                            <span>{{ $port.Version }}</span>
-                                                        </button>
-                                                    </h2>
-                                                    <div class="accordion-collapse collapse"
-                                                         data-bs-parent="#accordionNote-{{ $port.Port }}"
-                                                         id="collapseNote-{{ $port.Port }}">
-                                                        <div class="accordion-body"
-                                                             id="box-note-rendered-{{ $port.Port }}">
-                                                            <pre>{{ $port.Fingerprint }}</pre>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {{ end }}
-                                </table>
-                            </div>
-                        </div>
-
-                        <div class="w-100 m-0 d-lg-none d-block"></div>
-                        <div class="col">
-                            <div class="d-flex flex-column gap-4">
-                                <div class="row gx-0">
-                                    <ul id="box-details-{{ $box.IP }}" class="list-group list-group-flush border" style="border-radius: 15px">
-                                        <li class="list-group-item fs-2 d-flex flex-row align-items-center">
-                                            <i class="fa-fw fa-regular fa-user"></i>
-                                            <div class="ms-4">
-                                                <div class="fs-6">User Shells</div>
-                                                <div id="box-details-usershells-{{ $box.IP }}" data-ajax="usershells" data-boxId="{{ $box.IP }}">{{ $box.Usershells }}</div>
-                                            </div>
-                                        </li>
-                                        <li class="list-group-item fs-2 d-flex flex-row align-items-center">
-                                            <i class="fa-fw fa-solid fa-skull-crossbones"></i>
-                                            <div class="ms-4">
-                                                <div class="fs-6">Root Shells</div>
-                                                <div id="box-details-rootshells-{{ $box.IP }}" data-ajax="rootshells" data-boxId="{{ $box.ID }}">{{ $box.Rootshells }}</div>
-                                            </div>
-                                        </li>
-                                        <li class="list-group-item fs-2 d-flex flex-row align-items-center">
-                                            <i class="fa-fw fa-solid fa-street-view"></i>
-                                            <div class="ms-4">
-                                                <div class="fs-6">Claim</div>
-                                                <div id="box-details-claim-{{ $box.IP }}" data-ajax="claim" data-boxId="{{ $box.ID }}">{{ if ne $box.ClaimerID 0 }}{{ $claimUser.Name }}{{ else }}Unclaimed{{ end }}</div>
-                                            </div>
-                                        </li>
-                                    </ul>
-                                    <a type="button" class="btn btn-link w-auto link-underline link-underline-opacity-0 link-underline-opacity-100-hover" data-bs-toggle="modal" data-bs-target="#box-details-edit-{{ $box.IP }}">
-                                        Edit...
-                                    </a>
-                                </div>
+                        <div class="col-12 col-xl-3">
+                            <h1 style="margin-left: 3px">{{ $box.IP }}</h1>
+                            <div class="row gx-0 mt-4">
+                                <ul id="box-details-{{ $box.IP }}" class="list-group list-group-flush border" style="border-radius: 15px">
+                                    <li class="list-group-item fs-4 d-flex flex-row align-items-center">
+                                        <i class="fa-fw fa-solid fa-tag"></i>
+                                        <div class="ms-4">
+                                            <div class="fs-6">Hostname</div>
+                                            <div>{{ if $box.Hostname}}{{ $box.Hostname }}{{ else }}N/A{{ end }}</div>
+                                        </div>
+                                    </li>
+                                    <li class="list-group-item fs-4 d-flex flex-row align-items-center">
+                                        <i class="fa-fw fa-solid fa-layer-group"></i>
+                                        <div class="ms-4">
+                                            <div class="fs-6">Operating System</div>
+                                            <div>{{ $box.OS }}</div>
+                                        </div>
+                                    </li>
+                                    <li class="list-group-item fs-4 d-flex flex-row align-items-center">
+                                        <i class="fa-fw fa-regular fa-user"></i>
+                                        <div class="ms-4">
+                                            <div class="fs-6">User Shells</div>
+                                            <div id="box-details-usershells-{{ $box.IP }}" data-ajax="usershells" data-boxId="{{ $box.IP }}">{{ $box.Usershells }}</div>
+                                        </div>
+                                    </li>
+                                    <li class="list-group-item fs-4 d-flex flex-row align-items-center">
+                                        <i class="fa-fw fa-solid fa-skull-crossbones"></i>
+                                        <div class="ms-4">
+                                            <div class="fs-6">Root Shells</div>
+                                            <div id="box-details-rootshells-{{ $box.IP }}" data-ajax="rootshells" data-boxId="{{ $box.ID }}">{{ $box.Rootshells }}</div>
+                                        </div>
+                                    </li>
+                                    <li class="list-group-item fs-4 d-flex flex-row align-items-center">
+                                        <i class="fa-fw fa-solid fa-street-view"></i>
+                                        <div class="ms-4">
+                                            <div class="fs-6">Claim</div>
+                                            <div id="box-details-claim-{{ $box.IP }}" data-ajax="claim" data-boxId="{{ $box.ID }}">{{ if ne $box.ClaimerID 0 }}{{ $claimUser.Name }}{{ else }}Unclaimed{{ end }}</div>
+                                        </div>
+                                    </li>
+                                </ul>
+                                <a type="button" class="btn btn-link w-auto link-underline link-underline-opacity-0 link-underline-opacity-100-hover mb-4" data-bs-toggle="modal" data-bs-target="#box-details-edit-{{ $box.IP }}">
+                                    Edit...
+                                </a>
 
                                 <div class="modal fade" id="box-details-edit-{{ $box.IP }}" tabindex="-1" aria-labelledby="box-details-edit-{{ $box.IP }}Label" aria-hidden="true">
                                     <div class="modal-dialog">
@@ -197,10 +158,50 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="col col-sm-12 col-md-12 col-lg-12 col-xl-9">
+                            <div class="mt-0">
+                                <div class="distributed bolded">
+                                    <span class="fs-5">Port</span>
+                                    <span class="fs-5">Service</span>
+                                    <span class="fs-5">Version</span>
+                                </div>
+                                <hr class="custom-line">
+                                <table class="ports">
+                                    {{ $boxPorts := index $ports $box.ID }}
+                                    {{ range $port := $boxPorts }}
+                                            <div class="accordion" id="accordionNote-{{ $port.Port }}">
+                                                <div class="accordion-item">
+                                                    <h2 class="accordion-header">
+                                                        <button aria-controls="collapseNote-{{ $port.Port }}"
+                                                                aria-expanded="false" class="port-button accordion-button collapsed distributed"
+                                                                data-bs-target="#collapseNote-{{ $port.Port }}"
+                                                                data-bs-toggle="collapse"
+                                                                type="button">
+                                                            <span>{{ $port.Port }}/{{ $port.Protocol }}</span>
+                                                            <span>{{ $port.Service }}</span>
+                                                            <span>{{ $port.Version }}</span>
+                                                        </button>
+                                                    </h2>
+                                                    <div class="accordion-collapse collapse"
+                                                         data-bs-parent="#accordionNote-{{ $port.Port }}"
+                                                         id="collapseNote-{{ $port.Port }}">
+                                                        <div class="accordion-body"
+                                                             id="box-note-rendered-{{ $port.Port }}"
+                                                             style="overflow-y: auto;">
+                                                            <pre>{{ $port.Fingerprint }}</pre>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                    {{ end }}
+                                </table>
+                            </div>
+                        </div>
                     </div>
                     <div class="row">
                         <div class="col">
-                            <h3 style="font-weight: bold; margin-top: 20px">Notes</h3>
+                            <h3 class="fs-5 mt-4">Notes</h3>
                             <hr class="custom-line">
                             <table class="table" style="margin-bottom: 0;">
                                 <td class="py-3 px-3" style="border-radius: 5px">
@@ -244,7 +245,7 @@
     <div class="offcanvas-body">
         <div class="hstack gap-2 w-auto mb-4"></div>
 
-        <h5 class="mt-0 mb-3" style="color: dodgerblue">Premade</h5>
+        <h5 class="mt-0 mb-3" style="color: dodgerblue">Prepared</h5>
         <div class="gap-2 w-auto mb-3" id="filter-checkboxs">
             <div class="form-check mx-3" style="display: none">
                 <input autocomplete="off" checked class="form-check-input" id="all-boxes" name="all-filter" type="checkbox" value="all">

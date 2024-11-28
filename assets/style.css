@@ -113,27 +113,6 @@ body {
     font-size: 1.2rem;
 }
 
-.accordion-body {
-    word-wrap: break-word;
-    width: 48vw;
-    max-width: 810px;
-    overflow: auto;
-}
-
-@media (max-width: 992px) {
-    .accordion-body {
-        width: 58vw;
-        min-width: 650px;
-    }
-}
-
-@media (max-width: 770px) {
-    .accordion-body {
-        width: 58vw;
-        min-width: 400px;
-    }
-}
-
 .distributed {
     display: flex;
     justify-content: space-between; /* This will spread the spans across the button */
