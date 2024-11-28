@@ -5,7 +5,57 @@
 {{ $users := .users }}
 {{ $config := .config }}
 
-<button style="z-index:0;top:3rem;" class="float-start sticky-top btn btn-lg btn-outline-primary mt-4" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBoxList" aria-controls="offcanvasBoxList" title="Open menu"><i class="fa-solid fa-square-poll-horizontal"></i></button>
+<style>
+    .sidebar {
+        margin-top: 56px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 4.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 1rem;
+        z-index: 1000;
+    }
+
+    .sidebar button {
+        margin-bottom: 1rem;
+        width: 3rem;
+        height: 3rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.2rem;
+    }
+
+    .sidebar button i {
+        pointer-events: none;
+    }
+</style>
+
+<div class="sidebar">
+    <button
+            class="btn btn-lg btn-outline-primary"
+            type="button"
+            data-bs-toggle="modal"
+            data-bs-target="#uploadNmapModal"
+            aria-controls="uploadNmapModal"
+            title="Upload">
+        <i class="fa-solid fa-file-upload"></i>
+    </button>
+
+    <button
+            class="btn btn-lg btn-outline-primary"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasBoxList"
+            aria-controls="offcanvasBoxList"
+            title="Filter">
+        <i class="fa-solid fa-filter"></i>
+    </button>
+</div>
 
 <div class="mt-4 container">
     <div class="row">
@@ -77,7 +127,7 @@
                         <div class="col">
                             <div class="d-flex flex-column gap-4">
                                 <div class="row gx-0">
-                                    <ul id="box-details-{{ $box.IP }}" class="list-group list-group-flush border">
+                                    <ul id="box-details-{{ $box.IP }}" class="list-group list-group-flush border" style="border-radius: 15px">
                                         <li class="list-group-item fs-2 d-flex flex-row align-items-center">
                                             <i class="fa-fw fa-regular fa-user"></i>
                                             <div class="ms-4">
@@ -140,7 +190,6 @@
                                                 </form>
                                             </div>
                                             <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                                 <button type="submit" class="btn btn-primary" form="box-details-edit-form-{{ $box.IP }}">Save changes</button>
                                             </div>
                                         </div>
@@ -153,8 +202,8 @@
                         <div class="col">
                             <h3 style="font-weight: bold; margin-top: 20px">Notes</h3>
                             <hr class="custom-line">
-                            <table class="table" style="margin-bottom: 0">
-                                <td>
+                            <table class="table" style="margin-bottom: 0;">
+                                <td class="py-3 px-3" style="border-radius: 5px">
                                     {{ if gt (len $box.Note) 0 }}{{ $box.Note | markdown }}{{ else }}No notes yet.{{ end }}
                                 </td>
                             </table>
@@ -175,7 +224,6 @@
                                         </form>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                         <button type="submit" class="btn btn-primary" form="box-note-edit-form-{{ $box.IP }}" onclick="editBoxNote(event, '{{ $box.ID }}', '{{ $box.IP }}')">Save changes</button>
                                     </div>
                                 </div>
@@ -188,72 +236,89 @@
         </div>
     </div>
 </div>
-<div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasBoxList" aria-labelledby="offcanvasBoxListLabel">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title" id="offcanvasBoxListLabel">Actions</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-  </div>
-  <div class="offcanvas-body">
-    <div class="hstack gap-2 w-auto mb-4">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadNmapModal">
-            Upload NMAP XML
-        </button>
-        <div class="vr"></div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
-            Advanced Filter Boxes
-        </button>
+<div aria-labelledby="offcanvasBoxListLabel" class="offcanvas offcanvas-start" id="offcanvasBoxList" style="width: 325px" tabindex="-1">
+    <div class="offcanvas-header" style="margin-bottom: 0; padding-bottom: 0">
+        <h3 class="offcanvas-title" id="offcanvasBoxListLabel"><i class="fa-solid fa-filter" style="margin-right: 15px"></i>Filter</h3>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-    <h5 class="mb-4">Filters</h5>
-    <div class="hstack gap-2 w-auto mb-4" id="filter-radios">
-        <input type="radio" class="btn-check" name="all-filter" id="all-boxes" value="all" autocomplete="off" checked>
-        <label class="btn btn-primary rounded-pill" for="all-boxes">All Boxes</label>
-        <div class="vr"></div>
+    <div class="offcanvas-body">
+        <div class="hstack gap-2 w-auto mb-4"></div>
 
-        <input type="radio" class="btn-check" name="claim-filter" id="claimed" value="claimed" autocomplete="off">
-        <label class="btn btn-primary rounded-pill" for="claimed">All Claimed Boxes</label>
+        <h5 class="mt-0 mb-3" style="color: dodgerblue">Premade</h5>
+        <div class="gap-2 w-auto mb-3" id="filter-checkboxs">
+            <div class="form-check mx-3" style="display: none">
+                <input autocomplete="off" checked class="form-check-input" id="all-boxes" name="all-filter" type="checkbox" value="all">
+                <label class="form-check-label" for="all-boxes">all</label>
+            </div>
 
-        <input type="radio" class="btn-check" name="claim-filter" id="yours" value="yours" autocomplete="off">
-        <label class="btn btn-primary rounded-pill" for="yours">My Claimed Boxes</label>
+            <div class="form-check mx-3">
+                <input autocomplete="off" class="form-check-input" id="yours" name="claim-filter" type="checkbox" value="yours">
+                <label class="form-check-label" for="yours">my claimed</label>
+            </div>
 
-        <input type="radio" class="btn-check" name="claim-filter" id="unclaimed" value="unclaimed" autocomplete="off">
-        <label class="btn btn-primary rounded-pill" for="unclaimed">Unclaimed Boxes</label>
-        <div class="vr"></div>
+            <div class="form-check mx-3">
+                <input autocomplete="off" class="form-check-input" id="claimed" name="claim-filter" type="checkbox" value="claimed">
+                <label class="form-check-label" for="claimed">claimed</label>
+            </div>
+
+            <div class="form-check mx-3">
+                <input autocomplete="off" class="form-check-input" id="unclaimed" name="claim-filter" type="checkbox" value="unclaimed">
+                <label class="form-check-label" for="unclaimed">unclaimed</label>
+            </div>
+
+            <div class="form-check mx-3">
+                <input autocomplete="off" class="form-check-input" id="unpwned" name="pwn-filter" type="checkbox" value="unpwned">
+                <label class="form-check-label" for="unpwned">unpwned</label>
+            </div>
+
+            <div class="form-check mx-3">
+                <input autocomplete="off" class="form-check-input" id="pwned" name="pwn-filter" type="checkbox" value="pwned">
+                <label class="form-check-label" for="pwned">pwned</label>
+            </div>
+        </div>
 
 
-        <input type="radio" class="btn-check" name="pwn-filter" id="unpwned" value="unpwned" autocomplete="off">
-        <label class="btn btn-primary rounded-pill" for="unpwned">Unpwned Boxes</label>
+        <h5 class="mt-5 mb-3" style="color: dodgerblue">Port</h5>
+        <div class="mb-4 mx-2">
+            <div class="input-group">
+                <span class="input-group-text" id="basic-addon1">
+                  <i class="fas fa-search"></i>
+                </span>
+                <input id="filter-ports" name="filter-ports" type="text" class="form-control" placeholder="#" aria-describedby="basic-addon1" oninput="filterBoxes(event)">
+            </div>
+        </div>
 
-        <input type="radio" class="btn-check" name="pwn-filter" id="pwned" value="pwned" autocomplete="off">
-        <label class="btn btn-primary rounded-pill" for="pwned">Pwned Boxes</label>
-    </div>
-    {{ if ne (len $boxes) 0 }}
-    <h5 class="mb-4">Boxes</h5>
-    <div class="list-group list-group-flush" id="box-bar">
-        {{ range $box := $boxes }}
-        <button class="list-group-item list-group-item-action"
-                id="v-pills-{{ $box.IP }}-tab"
-                data-claim="{{ if ne $box.ClaimerID 0}}{{ $claimer := index $users $box.ClaimerID }}{{ $claimer.Name }}{{ else }}unclaimed{{ end }}"
-                data-pwned="{{ or (gt $box.Usershells 0) (gt $box.Rootshells 0) }}"
-                data-bs-toggle="pill"
-                data-bs-target="#v-pills-{{ $box.IP }}"
-                data-box-tab="box-tab-{{ $box.IP }}"
-                type="button"
-                role="tab"
-                aria-controls="v-pills-{{ $box.IP }}"
-                aria-selected="true"
-                data-ports="{{ $boxPorts := index $ports $box.ID }}{{ range $index, $port := $boxPorts }}{{if $index}},{{end}}{{ $port.Port }}{{ end }}">
+        <h5 class="mt-5 mb-2" style="color: dodgerblue">Boxes</h5>
+        {{ if ne (len $boxes) 0 }}
+
+        <div class="list-group list-group-flush" id="box-bar">
+            {{ range $box := $boxes }}
+            <button class="list-group-item list-group-item-action"
+                    id="v-pills-{{ $box.IP }}-tab"
+                    data-claim="{{ if ne $box.ClaimerID 0}}{{ $claimer := index $users $box.ClaimerID }}{{ $claimer.Name }}{{ else }}unclaimed{{ end }}"
+                    data-pwned="{{ or (gt $box.Usershells 0) (gt $box.Rootshells 0) }}"
+                    data-bs-toggle="pill"
+                    data-bs-target="#v-pills-{{ $box.IP }}"
+                    data-box-tab="box-tab-{{ $box.IP }}"
+                    type="button"
+                    role="tab"
+                    aria-controls="v-pills-{{ $box.IP }}"
+                    aria-selected="true"
+                    data-ports="{{ $boxPorts := index $ports $box.ID }}{{ range $index, $port := $boxPorts }}{{if $index}},{{end}}{{ $port.Port }}{{ end }}"
+                    style="border-bottom: 0px">
 
                 {{ $box.IP }}
                 {{ if $box.Hostname }} ({{ $box.Hostname }}) {{ end }}
                 {{ if ne $box.ClaimerID 0 }}{{ $claimer := index $users $box.ClaimerID }}<hr class="vr mx-2 my-0">{{ $claimer.Name }}{{ end }}
-        </button>
+            </button>
+            {{ end }}
+        </div>
+        {{ else }}
+        <p>Nothing to show right now. Upload NMAP results to view.</p>
         {{ end }}
     </div>
-    {{ else }}
-    <p>Nothing to show right now. Upload NMAP results to view.</p>
-    {{ end }}
-  </div>
 </div>
+
 
 <div class="modal fade" id="uploadNmapModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="uploadNmapModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -265,87 +330,58 @@
         <div class="modal-body">
             <form id="box-upload-form" method="POST" enctype="multipart/form-data" onsubmit="uploadNmap(event)">
                 <div class="mb-3">
-                    <label for="formFileMultiple" class="form-label">NMAP XML File</label>
                     <input type="file" class="form-control" name="files" id="formFileMultiple" multiple required aria-required="true">
                 </div>
             </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           <button type="submit" class="btn btn-primary" form="box-upload-form">Upload</button>
         </div>
       </div>
     </div>
 </div>
 
-<div class="modal fade" id="filterModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="filterModalLabel">Advanced Filter Boxes</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-            <form id="box-filter-form" onsubmit="filterBoxes(event)">
-                <div class="mb-3">
-                    <label for="portFilter" class="form-label">Find Boxes by Port</label>
-                    <p class="form-text">Use a comma separated list of ports (will use OR matching)</p>
-                    <div class="input-group mb-3">
-                        <span class="input-group-text" id="basic-addon1">Open</span>
-                        <input name="filter-ports" type="text" class="form-control" placeholder="Find with open port" aria-describedby="basic-addon1">
-                    </div>
-                </div>
-            </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary" form="box-filter-form">Apply Filter</button>
-        </div>
-      </div>
-    </div>
-</div>
-
 <script>
-    const allRadio      = document.getElementById('all-boxes');
-    const claimRadio    = document.querySelectorAll('input[name="claim-filter"]');
-    const pwnRadio      = document.querySelectorAll('input[name="pwn-filter"]');
+    const allcheckbox = document.getElementById('all-boxes');
+    const claimcheckbox = document.querySelectorAll('input[name="claim-filter"]');
+    const pwncheckbox = document.querySelectorAll('input[name="pwn-filter"]');
 
-    claimRadio.forEach(radio => {
-        radio.addEventListener('change', () => {
-            if (radio.checked) {
-                allRadio.checked = false;
+    claimcheckbox.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                allcheckbox.checked = false;
             }
         })
     });
 
-    pwnRadio.forEach(radio => {
-        radio.addEventListener('change', () => {
-            if (radio.checked) {
-                allRadio.checked = false;
+    pwncheckbox.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                allcheckbox.checked = false;
             }
         })
     });
 
-    allRadio.addEventListener('click', () => {
-        claimRadio.forEach(radio => {
-            radio.checked = false;
+    allcheckbox.addEventListener('click', () => {
+        claimcheckbox.forEach(checkbox => {
+            checkbox.checked = false;
         });
-        pwnRadio.forEach(radio => {
-            radio.checked = false;
+        pwncheckbox.forEach(checkbox => {
+            checkbox.checked = false;
         });
     });
 
-    const allClaimedRadio = document.getElementById('claimed');
-    const yourClaimedRadio = document.getElementById('yours');
-    const unClaimedRadio = document.getElementById('unclaimed');
-    const pwnedRadio = document.getElementById('pwned');
-    const unpwnedRadio = document.getElementById('unpwned');
+    const allClaimedcheckbox = document.getElementById('claimed');
+    const yourClaimedcheckbox = document.getElementById('yours');
+    const unClaimedcheckbox = document.getElementById('unclaimed');
+    const pwnedcheckbox = document.getElementById('pwned');
+    const unpwnedcheckbox = document.getElementById('unpwned');
 
-    const radioBar  = document.getElementById('filter-radios');
+    const checkboxBar = document.getElementById('filter-checkboxs');
     const boxes     = document.querySelectorAll('#box-bar .list-group-item-action');
 
-    radioBar.addEventListener('click', (event) => {
-        if(event.target && event.target.matches("input[type='radio']")) {
+    checkboxBar.addEventListener('click', (event) => {
+        if (event.target && event.target.matches("input[type='checkbox']")) {
             let boxcount = 0;
 
             boxes.forEach((box) => {
@@ -353,15 +389,15 @@
                 let claimBool = false;
                 let pwnBool = false;
 
-                if ((allClaimedRadio.checked && box.getAttribute('data-claim') != "unclaimed") ||
-                    (yourClaimedRadio.checked && box.getAttribute('data-claim') == '{{ .user.Name }}') ||
-                    (unClaimedRadio.checked && box.getAttribute('data-claim') == "unclaimed") ||
-                    (!allClaimedRadio.checked && !yourClaimedRadio.checked && !unClaimedRadio.checked)) {
+                if ((allClaimedcheckbox.checked && box.getAttribute('data-claim') != "unclaimed") ||
+                    (yourClaimedcheckbox.checked && box.getAttribute('data-claim') == '{{ .user.Name }}') ||
+                    (unClaimedcheckbox.checked && box.getAttribute('data-claim') == "unclaimed") ||
+                    (!allClaimedcheckbox.checked && !yourClaimedcheckbox.checked && !unClaimedcheckbox.checked)) {
                     claimBool = true;
                 }
-                if ((pwnedRadio.checked && box.getAttribute('data-pwned') == "true") ||
-                    (unpwnedRadio.checked && box.getAttribute('data-pwned') == "false") ||
-                    (!pwnedRadio.checked && !unpwnedRadio.checked)) {
+                if ((pwnedcheckbox.checked && box.getAttribute('data-pwned') == "true") ||
+                    (unpwnedcheckbox.checked && box.getAttribute('data-pwned') == "false") ||
+                    (!pwnedcheckbox.checked && !unpwnedcheckbox.checked)) {
                     pwnBool = true;
                 }
                 if((claimBool && pwnBool) || event.target.matches('#all-boxes')) {
@@ -371,14 +407,12 @@
                     box.style.display = "none";
                 }
             })
-            // document.getElementById('result-header').textContent = 'Showing ' + boxcount + '/{{ len .boxes }} boxes'
         }
     })
 
     const boxBar  = document.getElementById('box-bar');
     const tabList  = document.getElementById('tab-list');
     const defaultPane  = document.getElementById('v-pills-default');
-    // get rid of "no box selected pane"
 
     boxBar.addEventListener('click', (event) => {
         if(event.target && event.target.matches(".list-group-item-action")) {
@@ -498,7 +532,6 @@
     }
 
     // sse and ajax
-
     const evtSource = new EventSource("/sse");
     evtSource.onmessage = (event) => {
         data = JSON.parse(event.data)
@@ -611,25 +644,17 @@
     }
 
 
-    function filterBoxes(e) {
-        e.preventDefault();
-        formid = "box-filter-form"
-        const form = document.forms[formid]
+    function filterBoxes(event) {
+        const filterInput = document.getElementById("filter-ports");
+        let ports = filterInput.value.split(",").map(port => port.trim()).filter(port => port !== "");
 
-        if (form["filter-ports"] != undefined || form["filter-ports"] != "") {
-            let ports = form["filter-ports"].value.split(",")
-            boxes.forEach((box) => {
-                let boxports = box.getAttribute("data-ports").split(",")
-                ports.forEach((port) => {
-                    if (boxports.includes(port)) {
-                        box.style.display = "block"
-                    } else {
-                        box.style.display = "none"
-                    }
-                })
-            })
-        }
+        boxes.forEach((box) => {
+            let boxports = box.getAttribute("data-ports").split(",");
+            const match = ports.some(port => boxports.includes(port));
+            box.style.display = match || ports.length === 0 ? "block" : "none";
+        });
     }
+
 </script>
 
 {{ template "error.html" .error }}

@@ -10,7 +10,6 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -180,31 +179,6 @@ type NmapUpload struct {
 	Files []*multipart.FileHeader `form:"files" binding:"required"`
 }
 
-func unescapeText(text string) string {
-	// Define regex for matching hexadecimal escape sequences (e.g., \x20)
-	hexRegex := regexp.MustCompile(`\\x([0-9A-Fa-f]{2})`)
-	// Replace hexadecimal escape sequences with their corresponding characters
-	text = hexRegex.ReplaceAllStringFunc(text, func(match string) string {
-		hex := match[2:]
-		num, err := strconv.ParseInt(hex, 16, 32)
-		if err != nil {
-			return match
-		}
-		return string(rune(num))
-	})
-
-	// Replace other escape sequences
-	text = strings.ReplaceAll(text, `\r`, "\r")
-
-	text = strings.ReplaceAll(text, `\n`, "\n")
-	text = strings.ReplaceAll(text, `\t`, "\t")
-	text = strings.ReplaceAll(text, `\'`, "'")
-	text = strings.ReplaceAll(text, `\"`, `"`)
-	text = strings.ReplaceAll(text, `\\`, `\`)
-
-	return text
-}
-
 type Script []struct {
 	ID     string `xml:"id,attr"`
 	Output string `xml:"output,attr"`
@@ -310,13 +284,6 @@ func uploadNmap(c *gin.Context) {
 
 			// Process ports
 			for _, p := range host.Ports.Port {
-				//fmt.Println(p.Script)
-				//for _, script := range p.Script {
-				//	fmt.Printf("ID: %s\n\n", script.ID)
-				//	fmt.Printf("Output: %s\n\n", script.Output)
-				//	//fmt.Printf("Elem: %s\n\n", script.Elem)
-				//}
-
 				port = models.Port{
 					Port:        p.Portid,
 					BoxID:       box.ID,
