@@ -10,6 +10,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -39,8 +40,10 @@ func addPrivateRoutes(g *gin.RouterGroup) {
 	/* inventory */
 	// boxes
 	g.GET("/boxes", viewBoxes)
+	g.GET("/web", viewWebsites)
 	g.GET("/boxes/export", viewExportBoxes)
 	g.POST("/boxes/upload", uploadNmap)
+	g.POST("/web/upload", uploadGobuster)
 	g.POST("/boxes/edit/details/:boxId", editBoxDetails)
 	g.POST("/boxes/edit/note/:boxId", editBoxNote)
 	g.GET("/boxes/note/:boxId", viewBoxNote)
@@ -147,6 +150,25 @@ func viewBoxes(c *gin.Context) {
 	c.HTML(http.StatusOK, "boxes.html", pageData(c, "Boxes", gin.H{"boxes": boxes, "ports": ports, "users": users}))
 }
 
+func viewWebsites(c *gin.Context) {
+	webs, err := dbGetWebs()
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "export-boxes.html", pageData(c, "Export Boxes", gin.H{"error": err}))
+		return
+	}
+	directories, err := dbGetDirectories()
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "export-boxes.html", pageData(c, "Export Boxes", gin.H{"error": err}))
+		return
+	}
+	users, err := dbGetUsers()
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "export-boxes.html", pageData(c, "Export Boxes", gin.H{"error": err}))
+		return
+	}
+	c.HTML(http.StatusOK, "web.html", pageData(c, "Web", gin.H{"webs": webs, "directories": directories, "users": users}))
+}
+
 func viewExportBoxes(c *gin.Context) {
 	boxes, err := dbGetBoxes()
 	if err != nil {
@@ -175,7 +197,7 @@ func viewAbout(c *gin.Context) {
 	c.HTML(http.StatusOK, "about.html", pageData(c, "About", gin.H{"config": buf.String()}))
 }
 
-type NmapUpload struct {
+type Upload struct {
 	Files []*multipart.FileHeader `form:"files" binding:"required"`
 }
 
@@ -219,7 +241,7 @@ func formatFingerprint(script Script) string {
 }
 
 func uploadNmap(c *gin.Context) {
-	var form NmapUpload
+	var form Upload
 	err := c.ShouldBind(&form)
 
 	if err != nil {
@@ -308,6 +330,115 @@ func uploadNmap(c *gin.Context) {
 	}
 	sendSSE([]string{"boxes", "ports", "dirty"})
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": fmt.Sprintf("Received %d file(s) successfully! Found %d box(es) successfully.", len(form.Files)-fileErrors, boxCount-len(dataErrors))})
+}
+
+func mapStatusCode(statusCode int) string {
+	message := http.StatusText(statusCode)
+	if message == "" {
+		return "Unknown"
+	}
+	return message
+}
+
+func extractURL(scan string) string {
+	re := regexp.MustCompile(`\[\+] Url:\s+(http\S+)`)
+	matches := re.FindStringSubmatch(scan)
+	return matches[1]
+}
+
+func extractIP(url string) string {
+	re := regexp.MustCompile(`((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}`)
+	match := re.FindString(url)
+	return match
+}
+
+func extractPort(url string) int {
+	parts := strings.Split(url, ":")
+	var port int = 0
+
+	if len(parts) > 2 {
+		port, _ = strconv.Atoi(parts[len(parts)-1])
+	} else {
+		if strings.HasPrefix(url, "http") {
+			port = 80
+		}
+		if strings.HasPrefix(url, "https") {
+			port = 443
+		}
+	}
+	return port
+}
+
+func extractDirectories(web models.Web, scan string) {
+	re := regexp.MustCompile(`/(.+?)\s+\(Status: (\d+)\) \[Size: (\d+)]`)
+	matches := re.FindAllStringSubmatch(scan, -1)
+
+	var directory models.Directory
+	for _, match := range matches {
+		if len(match) == 4 {
+			statusCode := 0
+			size := 0
+			fmt.Sscanf(match[2], "%d", &statusCode)
+			fmt.Sscanf(match[3], "%d", &size)
+			directory = models.Directory{
+				WebID:           web.ID,
+				Path:            "/" + match[1],
+				ResponseCode:    statusCode,
+				ResponseMessage: mapStatusCode(statusCode),
+				Size:            size,
+			}
+			db.Create(&directory)
+		}
+	}
+}
+
+func uploadGobuster(c *gin.Context) {
+	var form Upload
+	err := c.ShouldBind(&form)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
+		return
+	}
+
+	var web models.Web
+	var dataErrors []string
+	var fileErrors int
+
+	for _, formFile := range form.Files {
+		errorOnIteration := false
+		openedFile, _ := formFile.Open()
+		file, _ := io.ReadAll(openedFile)
+
+		// Initialize
+		web = models.Web{}
+
+		// Extract
+		url := extractURL(string(file))
+		web.URL = url
+		web.IP = extractIP(url)
+		web.Port = extractPort(url)
+
+		// Store
+		web, err = dbPropagateWeb(web)
+		if err != nil {
+			dataErrors = append(dataErrors, errors.Wrap(err, "Data propagation error:").Error())
+			errorOnIteration = true
+		}
+		_ = db.Create(&web)
+
+		extractDirectories(web, string(file))
+		if errorOnIteration {
+			fileErrors++
+		}
+	}
+	if len(dataErrors) != 0 {
+		for err := range dataErrors {
+			c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": err})
+		}
+	}
+	sendSSE([]string{"web", "directories", "dirty"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": fmt.Sprintf("Received %d file(s) successfully!", len(form.Files)-fileErrors)})
 }
 
 func editBoxDetails(c *gin.Context) {

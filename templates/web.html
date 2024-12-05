@@ -1,0 +1,407 @@
+{{ template "header.html" . }}
+
+{{ $webs := .webs }}
+{{ $directories := .directories }}
+{{ $users := .users }}
+
+<style>
+    .sidebar {
+        margin-top: 56px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 4.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 1rem;
+        z-index: 1000;
+    }
+
+    .sidebar button {
+        margin-bottom: 1rem;
+        width: 3rem;
+        height: 3rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.2rem;
+    }
+
+    .sidebar button i {
+        pointer-events: none;
+    }
+</style>
+
+<div class="sidebar">
+    <button
+            class="btn btn-lg btn-outline-primary"
+            type="button"
+            data-bs-toggle="modal"
+            data-bs-target="#uploadGobusterModal"
+            aria-controls="uploadGobusterModal"
+            title="Upload">
+        <i class="fa-solid fa-file-upload"></i>
+    </button>
+
+    <button
+            class="btn btn-lg btn-outline-primary"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasBoxList"
+            aria-controls="offcanvasBoxList"
+            title="Filter">
+        <i class="fa-solid fa-filter"></i>
+    </button>
+</div>
+
+<div class="mt-4 container">
+    <div class="row">
+        {{ range $web := $webs }}
+        <p>{{ $web.IP }}</p>
+        {{ end }}
+    </div>
+
+    <div class="modal fade" id="uploadGobusterModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="uploadGobusterModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="uploadGobusterModalLabel">Upload Gobuster Scan</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="box-upload-form" method="POST" enctype="multipart/form-data" onsubmit="uploadGobuster(event)">
+                        <div class="mb-3">
+                            <input type="file" class="form-control" name="files" id="formFileMultiple" multiple required aria-required="true">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" form="box-upload-form">Upload</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    const allcheckbox = document.getElementById('all-boxes');
+    const claimcheckbox = document.querySelectorAll('input[name="claim-filter"]');
+    const pwncheckbox = document.querySelectorAll('input[name="pwn-filter"]');
+
+    claimcheckbox.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                allcheckbox.checked = false;
+            }
+        })
+    });
+
+    pwncheckbox.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                allcheckbox.checked = false;
+            }
+        })
+    });
+
+    allcheckbox.addEventListener('click', () => {
+        claimcheckbox.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        pwncheckbox.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+    });
+
+    const allClaimedcheckbox = document.getElementById('claimed');
+    const yourClaimedcheckbox = document.getElementById('yours');
+    const unClaimedcheckbox = document.getElementById('unclaimed');
+    const pwnedcheckbox = document.getElementById('pwned');
+    const unpwnedcheckbox = document.getElementById('unpwned');
+
+    const checkboxBar = document.getElementById('filter-checkboxs');
+    const boxes     = document.querySelectorAll('#box-bar .list-group-item-action');
+
+    checkboxBar.addEventListener('click', (event) => {
+        if (event.target && event.target.matches("input[type='checkbox']")) {
+            let boxcount = 0;
+
+            boxes.forEach((box) => {
+
+                let claimBool = false;
+                let pwnBool = false;
+
+                if ((allClaimedcheckbox.checked && box.getAttribute('data-claim') != "unclaimed") ||
+                    (yourClaimedcheckbox.checked && box.getAttribute('data-claim') == '{{ .user.Name }}') ||
+                    (unClaimedcheckbox.checked && box.getAttribute('data-claim') == "unclaimed") ||
+                    (!allClaimedcheckbox.checked && !yourClaimedcheckbox.checked && !unClaimedcheckbox.checked)) {
+                    claimBool = true;
+                }
+                if ((pwnedcheckbox.checked && box.getAttribute('data-pwned') == "true") ||
+                    (unpwnedcheckbox.checked && box.getAttribute('data-pwned') == "false") ||
+                    (!pwnedcheckbox.checked && !unpwnedcheckbox.checked)) {
+                    pwnBool = true;
+                }
+                if((claimBool && pwnBool) || event.target.matches('#all-boxes')) {
+                    box.style.display = "block";
+                    boxcount++;
+                } else {
+                    box.style.display = "none";
+                }
+            })
+        }
+    })
+
+    const boxBar  = document.getElementById('box-bar');
+    const tabList  = document.getElementById('tab-list');
+    const defaultPane  = document.getElementById('v-pills-default');
+
+    boxBar.addEventListener('click', (event) => {
+        if(event.target && event.target.matches(".list-group-item-action")) {
+            defaultPane.classList.remove("active");
+        }
+    })
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+        function renderBoxNote(e, id, ip) {
+            e.preventDefault();
+
+            const url = "/boxes/note/" + id;
+            const textarea = document.getElementById('note-' + ip);
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Server response:', data);
+                    if (data.status) {
+                        textarea.value = data.note;
+                        const modal = new bootstrap.Modal(document.getElementById('box-note-edit-' + ip));
+                        modal.show();
+                    } else {
+                        createToast("Failed to load the note", "bg-danger");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    createToast("An error occurred while loading the note", "bg-danger");
+                });
+        }
+
+        document.querySelectorAll('.notes-button').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const id = button.getAttribute('data-id');
+                const ip = button.getAttribute('data-ip');
+                renderBoxNote(event, id, ip);
+            });
+        });
+    });
+
+    function createBoxTab(ip) {
+        box = document.querySelector(`[data-box-tab="${ip}"]`)
+        li = document.createElement("li")
+        li.classList.add("nav-item")
+        li.id = ip+"-parent"
+
+        closeButton = document.createElement("button")
+        closeButton.type = "button"
+        closeButton.classList.add("btn-close")
+        closeButton.setAttribute("aria-label", "Close")
+        closeButton.setAttribute("data-close", li.id)
+        closeButton.addEventListener('click', (event) => {
+            document.getElementById(event.target.getAttribute("data-close")).remove()
+            document.getElementById(box.getAttribute("data-bs-target").replace("#","")).classList.remove("active")
+            if (window.location.hash.includes(","))
+            {
+                boxList = window.location.hash.split(",").filter(element => element != event.target.getAttribute("data-close").replace("-parent",""))
+                window.location.hash = boxList.join(",")
+            } else {
+                window.location.hash = ""
+            }
+            if (!hash) {
+                defaultPane.classList.add("active")
+            }
+        })
+
+        newTab = document.createElement("button")
+        newTab.id = ip
+        newTab.classList.add("nav-link")
+        newTab.setAttribute("data-bs-target", box.getAttribute("data-bs-target"))
+        newTab.setAttribute("data-bs-toggle", "pill")
+        newTab.type = "button"
+        newTab.role = "tab"
+        newTab.setAttribute("aria-controls", box.getAttribute("aria-controls"))
+        newTab.textContent = box.textContent
+
+        newTab.appendChild(closeButton)
+        li.appendChild(newTab)
+        tabList.appendChild(li)
+        return new bootstrap.Tab(newTab)
+    }
+
+    // probably need to clean this up
+    boxes.forEach((box) => {
+        box.addEventListener('click', (event) => {
+            id = box.getAttribute("data-box-tab")
+            if (document.getElementById(id) != null) {
+                return
+            }
+            var hash = location.hash.replace(/^#/, '');
+            if (hash) {
+                if (!hash.split(",").includes(id)) {
+                    window.location.hash += ","+id;
+                }
+            } else {
+                window.location.hash += id;
+            }
+
+            createBoxTab(id)
+        })
+    })
+
+    // Javascript to enable link to tab (save state)
+    var hash = location.hash.replace(/^#/, '');
+    if (hash) {
+        defaultPane.classList.remove("active");
+        for (const ip of hash.split(",")) {
+            tab = createBoxTab(ip)
+            tab.show()
+        }
+    }
+
+    // sse and ajax
+    const evtSource = new EventSource("/sse");
+    evtSource.onmessage = (event) => {
+        data = JSON.parse(event.data)
+        if (data.includes("dirty")) {
+            createToast("Refresh the window for newer data", "bg-primary")
+        }
+        if (data.includes("boxes")) {
+            fetch("/api/boxes")
+            .then(response => response.json())
+            .then(response => {
+                if (response.status == false) {
+                    createToast(response.message, "bg-danger")
+                } else {
+                    for (const id of response.boxIds) {
+                        document.querySelectorAll('[data-ajax="usershells"]').forEach((element) => {
+                            if (element.getAttribute("data-boxId") == id) {
+                                element.textContent = response.boxes[id].Usershells
+                            }
+                        })
+                        document.querySelectorAll('[data-ajax="rootshells"]').forEach((element) => {
+                            if (element.getAttribute("data-boxId") == id) {
+                                element.textContent = response.boxes[id].Rootshells
+                            }
+                        })
+                        document.querySelectorAll('[data-ajax="claim"]').forEach((element) => {
+                            if (element.getAttribute("data-boxId") == id) {
+                                if (response.boxes[id].ClaimerID == 0) {
+                                    element.textContent = "Unclaimed"
+                                } else {
+                                    element.textContent = response.users[response.boxes[id].ClaimerID].Name
+                                }
+                            }
+                        })
+                        document.querySelectorAll('[data-ajax="note"]').forEach((element) => {
+                            if (element.getAttribute("data-boxId") == id) {
+                                element.textContent = response.boxes[id].Note
+                            }
+                        })
+                    }
+                }
+            })
+            .catch(error => {
+                createToast(error, "bg-danger")
+            })
+        }
+        if (data.includes("ports")){
+            console.log("ports")
+        }
+    };
+
+    function editBoxNote(e, id, ip) {
+        formid = "box-note-edit-form-"+ip;
+        url = "/boxes/edit/note/"+id;
+
+        const form = document.forms[formid]
+        data = {
+            note: form.note.value,
+        }
+
+        success_function = function (response){
+            const modal = bootstrap.Modal.getInstance(document.getElementById('box-note-edit-'+ip))
+
+            createToast(response.message, "bg-success")
+            modal.hide()
+        }
+
+        postAjax(e, formid, data, url, success_function)
+    }
+
+    function editBoxDetails(e, id, ip) {
+        formid = "box-details-edit-form-"+ip;
+        url = "/boxes/edit/details/"+id;
+
+        const form = document.forms[formid]
+        data = {
+            usershells: form.usershells.value,
+            rootshells: form.rootshells.value,
+            claim: form.claim.value,
+        }
+
+        success_function = function (response){
+            const modal = bootstrap.Modal.getInstance(document.getElementById('box-details-edit-'+ip))
+
+            createToast(response.message, "bg-success")
+            modal.hide()
+        }
+
+        postAjax(e, formid, data, url, success_function)
+    }
+
+    function uploadGobuster(e) {
+        formid = "box-upload-form";
+        url = "/web/upload";
+
+        const form = document.forms[formid]
+
+        data = new FormData()
+        for (const file of form.files.files) {
+            data.append("files", file)
+        }
+
+        success_function = function (response){
+            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadGobusterModal'))
+
+            createToast(response.message, "bg-success")
+            modal.hide()
+        }
+
+        postAjax(e, formid, data, url, success_function)
+    }
+
+
+    function filterWeb(event) {
+        const filterInput = document.getElementById("filter-ports");
+        let directories = filterInput.value.split(",").map(dir => dir.trim()).filter(dir => dir !== "");
+
+        web.forEach((box) => {
+            let boxports = box.getAttribute("data-ports").split(",");
+            const match = dir.some(dir => boxports.includes(dir));
+            box.style.display = match || dir.length === 0 ? "block" : "none";
+        });
+    }
+
+</script>
+
+{{ template "error.html" .error }}
+
+{{ template "footer.html" }}

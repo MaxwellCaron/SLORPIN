@@ -55,3 +55,25 @@ type Task struct {
 	AssigneeID uint
 	Assignee   UserData
 }
+
+type Web struct {
+	ID        uint
+	URL       string
+	IP        string
+	Title     string
+	Type      string
+	Port      int
+	Note      string
+	Timestamp time.Time `gorm:"column:timestamp;default:CURRENT_TIMESTAMP"`
+}
+
+type Directory struct {
+	ID              uint
+	WebID           uint
+	Web             Web
+	Path            string
+	ResponseCode    int
+	ResponseMessage string
+	Size            int
+	Timestamp       time.Time `gorm:"column:timestamp;default:CURRENT_TIMESTAMP"`
+}

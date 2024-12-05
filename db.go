@@ -17,6 +17,41 @@ func dbGetBoxes() ([]models.Box, error) {
 	return boxes, nil
 }
 
+func dbGetWebs() ([]models.Web, error) {
+	var webs []models.Web
+
+	subquery := db.Table("webs").Select("id,MAX(timestamp)").Group("ip")
+	result := db.Table("webs").Joins("INNER JOIN (?) as grouped on webs.id = grouped.id", subquery).Find(&webs)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return webs, nil
+}
+
+func dbGetDirectories() (map[uint][]models.Directory, error) {
+	var directories []models.Directory
+
+	subquery := db.Table("directories").
+		Select("id, MAX(timestamp)").
+		Group("web_id, path")
+
+	result := db.Table("directories").
+		Joins("INNER JOIN (?) as grouped on directories.id = grouped.id", subquery).
+		Order("path").
+		Find(&directories)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	directoryMap := map[uint][]models.Directory{}
+	for _, directory := range directories {
+		directoryMap[directory.WebID] = append(directoryMap[directory.WebID], directory)
+	}
+	return directoryMap, nil
+}
+
 func dbGetPorts() (map[uint][]models.Port, error) {
 	var ports []models.Port
 
@@ -177,6 +212,29 @@ func dbPropagateData(box models.Box) (models.Box, error) {
 	box.Note = oldBox.Note
 
 	return box, nil
+}
+
+func dbPropagateWeb(web models.Web) (models.Web, error) {
+	var oldWeb models.Web
+
+	// see if IP exists
+	if err := db.Table("webs").Where("ip = (?)", web.IP).First(&models.Web{}).Error; err != nil {
+		return web, nil
+	}
+
+	subquery := db.Table("webs").Select("id,ip,MAX(timestamp)").Group("ip")
+	result := db.Table("webs").Joins("INNER JOIN (?) as grouped on webs.id = grouped.id", subquery).Where("web.IP = ?", web.IP).First(&oldWeb)
+
+	if result.Error != nil {
+		return models.Web{}, result.Error
+	}
+	// these shouldn't change when merging scans
+	//web.ClaimerID = oldWeb.ClaimerID
+	//web.Rootshells = oldWeb.Rootshells
+	//web.Usershells = oldWeb.Usershells
+	web.Note = oldWeb.Note
+
+	return web, nil
 }
 
 func dbGetTasks() ([]models.Task, error) {
