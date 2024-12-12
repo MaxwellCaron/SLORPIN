@@ -57,11 +57,11 @@ type Task struct {
 }
 
 type Web struct {
-	ID        uint
-	URL       string
+	ID        uint   `gorm:"primaryKey"`
+	URL       string `gorm:"unique"`
 	IP        string
 	Title     string
-	Type      string
+	Backend   string
 	Port      int
 	Note      string
 	Timestamp time.Time `gorm:"column:timestamp;default:CURRENT_TIMESTAMP"`
@@ -75,5 +75,6 @@ type Directory struct {
 	ResponseCode    int
 	ResponseMessage string
 	Size            int
+	Note            string
 	Timestamp       time.Time `gorm:"column:timestamp;default:CURRENT_TIMESTAMP"`
 }

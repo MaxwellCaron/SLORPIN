@@ -45,9 +45,16 @@ func addPrivateRoutes(g *gin.RouterGroup) {
 	g.POST("/boxes/upload", uploadNmap)
 	g.POST("/web/upload", uploadGobuster)
 	g.POST("/boxes/edit/details/:boxId", editBoxDetails)
+	g.POST("/web/edit/details/:webId", editWebDetails)
 	g.POST("/boxes/edit/note/:boxId", editBoxNote)
+	g.POST("/web/edit/note/:webId", editWebNote)
+	g.POST("/web/edit/directory/note/:directoryId", editDirectoryNote)
 	g.GET("/boxes/note/:boxId", viewBoxNote)
+	g.GET("/web/note/:webId", viewWebNote)
+	g.GET("/web/directory/note/:directoryId", viewDirectoryNote)
 	g.GET("/api/boxes", getBoxes)
+	g.GET("/api/web/:webId", getWeb)
+	g.GET("/web/directories/:webId", getWebDirectoryIds)
 
 	// credentials
 	g.GET("/credentials", viewCredentials)
@@ -341,9 +348,15 @@ func mapStatusCode(statusCode int) string {
 }
 
 func extractURL(scan string) string {
-	re := regexp.MustCompile(`\[\+] Url:\s+(http\S+)`)
-	matches := re.FindStringSubmatch(scan)
-	return matches[1]
+	re := regexp.MustCompile(`https?://[^/ \n]+`)
+	match := re.FindString(scan)
+	fmt.Println(match)
+	if match != "" {
+		testre := regexp.MustCompile(`[^a-zA-Z0-9/:.-]`)
+		strippedString := testre.ReplaceAllString(match, "")
+		return strippedString
+	}
+	return ""
 }
 
 func extractIP(url string) string {
@@ -369,12 +382,13 @@ func extractPort(url string) int {
 	return port
 }
 
-func extractDirectories(web models.Web, scan string) {
-	re := regexp.MustCompile(`/(.+?)\s+\(Status: (\d+)\) \[Size: (\d+)]`)
+func extractDirectories(web *models.Web, scan string) {
+	re := regexp.MustCompile(`(.+?)\s+\(Status: (\d+)\) \[Size: (\d+)]`)
 	matches := re.FindAllStringSubmatch(scan, -1)
 
 	var directory models.Directory
 	for _, match := range matches {
+		fmt.Println(match)
 		if len(match) == 4 {
 			statusCode := 0
 			size := 0
@@ -382,11 +396,12 @@ func extractDirectories(web models.Web, scan string) {
 			fmt.Sscanf(match[3], "%d", &size)
 			directory = models.Directory{
 				WebID:           web.ID,
-				Path:            "/" + match[1],
+				Path:            strings.Replace(match[1], web.URL, "", -1),
 				ResponseCode:    statusCode,
 				ResponseMessage: mapStatusCode(statusCode),
 				Size:            size,
 			}
+			fmt.Println(directory)
 			db.Create(&directory)
 		}
 	}
@@ -412,6 +427,7 @@ func uploadGobuster(c *gin.Context) {
 
 		// Initialize
 		web = models.Web{}
+		var webId uint
 
 		// Extract
 		url := extractURL(string(file))
@@ -420,12 +436,16 @@ func uploadGobuster(c *gin.Context) {
 		web.Port = extractPort(url)
 
 		// Store
-		web, err = dbPropagateWeb(web)
+		webId, err = findOrCreateWeb(web)
+		web, err := dbGetWeb(int(webId))
 		if err != nil {
 			dataErrors = append(dataErrors, errors.Wrap(err, "Data propagation error:").Error())
-			errorOnIteration = true
+			//errorOnIteration = true
 		}
-		_ = db.Create(&web)
+		fmt.Println("WEB==========================" +
+			"==========")
+		fmt.Println(web)
+		fmt.Println("WEB====================================")
 
 		extractDirectories(web, string(file))
 		if errorOnIteration {
@@ -468,6 +488,31 @@ func editBoxDetails(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Updated box details successfully!"})
 }
 
+func editWebDetails(c *gin.Context) {
+	webId, err := strconv.ParseUint(c.Param("webId"), 10, 32)
+	title := c.PostForm("title")
+	backend := c.PostForm("backend")
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
+		return
+	}
+
+	updatedweb := models.Web{
+		ID:      uint(webId),
+		Title:   title,
+		Backend: backend,
+	}
+
+	err = dbUpdateWebDetails(&updatedweb)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
+		return
+	}
+	sendSSE([]string{"webs"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Updated web details successfully!"})
+}
+
 func editBoxNote(c *gin.Context) {
 	boxId, err := strconv.ParseUint(c.Param("boxId"), 10, 32)
 	note := c.PostForm("note")
@@ -490,11 +535,82 @@ func editBoxNote(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Updated box note successfully!"})
 }
 
+func editWebNote(c *gin.Context) {
+	webId, err := strconv.ParseUint(c.Param("webId"), 10, 32)
+	fmt.Println(webId)
+	note := c.PostForm("note")
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
+		return
+	}
+
+	updatedweb := models.Web{
+		ID:   uint(webId),
+		Note: note,
+	}
+
+	err = dbUpdateWebNote(&updatedweb)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Updated web note successfully!"})
+}
+
+func editDirectoryNote(c *gin.Context) {
+	directoryId, err := strconv.ParseUint(c.Param("directoryId"), 10, 32)
+	note := c.PostForm("note")
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
+		return
+	}
+
+	updatedDirectory := models.Directory{
+		ID:   uint(directoryId),
+		Note: note,
+	}
+
+	err = dbUpdateDirectoryNote(&updatedDirectory)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": errors.Wrap(err, "Error").Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Updated directory note successfully!"})
+}
+
 func viewBoxNote(c *gin.Context) {
 	idParam := c.Param("boxId")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 
-	note, err := dbGetNote(uint(id))
+	note, err := dbGetNote("boxes", uint(id))
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", pageData(c, "Note", gin.H{"error": err}))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "note": note})
+}
+
+func viewWebNote(c *gin.Context) {
+	idParam := c.Param("webId")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+
+	note, err := dbGetNote("webs", uint(id))
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", pageData(c, "Note", gin.H{"error": err}))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "note": note})
+}
+
+func viewDirectoryNote(c *gin.Context) {
+	idParam := c.Param("directoryId")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+
+	note, err := dbGetNote("directories", uint(id))
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", pageData(c, "Note", gin.H{"error": err}))
 		return
@@ -638,6 +754,32 @@ func getBoxes(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": true, "boxIds": boxIds, "boxes": jsonBoxes, "users": users})
+}
+
+func getWeb(c *gin.Context) {
+	idParam := c.Param("webId")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+
+	web, err := dbGetWeb(int(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": errors.Wrap(err, "AJAX").Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "web": web})
+}
+
+func getWebDirectoryIds(c *gin.Context) {
+	idParam := c.Param("webId")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+
+	ids, err := dbGetDirectoryIds(int(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": errors.Wrap(err, "AJAX").Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "ids": ids})
 }
 
 func viewTasks(c *gin.Context) {

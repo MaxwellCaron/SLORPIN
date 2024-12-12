@@ -61,6 +61,8 @@ func main() {
 	router := gin.Default()
 	router.SetFuncMap(template.FuncMap{
 		"markdown": models.RenderMarkdown,
+		"base64":   models.Base64Encode,
+		"strip":    models.RemovePeriods,
 	})
 	router.Static("/assets", "./assets")
 	router.LoadHTMLGlob("templates/*.html")
