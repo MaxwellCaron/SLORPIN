@@ -149,37 +149,37 @@
                         <div class="row">
                             <div class="col-12 col-xl-3">
                                 <h1 style="margin-left: 3px">{{ $web.IP }}</h1>
-                                <div class="row gx-0 mt-4">
+                                <div class="row gx-0 my-4">
                                     <ul class="list-group list-group-flush border" id="web-details-{{ $web.IP }}"
                                         style="border-radius: 15px">
                                         <li class="list-group-item fs-4 d-flex flex-row align-items-center">
                                             <i class="fa-fw fa-solid fa-share-nodes"></i>
                                             <div class="ms-4">
                                                 <div class="fs-6">Port</div>
-                                                <div>{{ $web.Port }}</div>
+                                                <div class="fs-5">{{ $web.Port }}</div>
                                             </div>
                                         </li>
                                         <li class="list-group-item fs-4 d-flex flex-row align-items-center">
-                                            <i class="fa-fw fa-solid fa-tag"></i>
+                                            <i class="fs-5 fa-fw fa-solid fa-tag"></i>
                                             <div class="ms-4" style="overflow-y: auto">
                                                 <div class="fs-6">Title</div>
-                                                <div data-webId="{{ $web.IP }}"
+                                                <div class="fs-5" data-webId="{{ $web.IP }}"
                                                      id="web-details-title-{{ $web.IP }}">
                                                     {{ if $web.Title }}{{ $web.Title }}{{ else }}N/A{{ end }}
                                                 </div>
                                             </div>
                                         </li>
                                         <li class="list-group-item fs-4 d-flex flex-row align-items-center">
-                                            <i class="fa-fw fa-solid fa-gear"></i>
+                                            <i class="fs-5 fa-fw fa-solid fa-gear"></i>
                                             <div class="ms-4" style="overflow-y: auto">
                                                 <div class="fs-6">Backend</div>
-                                                <div data-webId="{{ $web.ID }}"
+                                                <div class="fs-5" data-webId="{{ $web.ID }}"
                                                      id="web-details-type-{{ $web.IP }}">
                                                     {{ if $web.Backend }}{{ $web.Backend }}{{ else }}N/A{{ end }}
                                                 </div>
                                             </div>
                                         </li>
-                                        <li class="list-group-item fs-6 d-flex flex-row justify-content-center my-0 py-1 edit-hover"
+                                        <li class="fs-5 list-group-item fs-6 d-flex flex-row justify-content-center my-0 py-1 edit-hover"
                                             data-bs-target="#web-details-edit-{{ $web.ID }}"
                                             data-bs-toggle="modal" type="button">
                                             Edit

@@ -167,8 +167,8 @@
                     style="border-bottom: 0">
 
                 {{ $box.IP }}
-                {{ if $box.Hostname }} ({{ $box.Hostname }}) {{ end }}
-                {{ if ne $box.ClaimerID 0 }}{{ $claimer := index $users $box.ClaimerID }}<hr class="vr mx-2 my-0">{{ $claimer.Name }}{{ end }}
+                {{ if $box.Hostname }} ({{ $box.Hostname }}){{ end }}
+                {{ if $box.OS }}<hr class="vr mx-2 my-0">{{ $box.OS }}{{ end }}
             </button>
             {{ end }}
         </div>
@@ -198,41 +198,41 @@
                         <div class="row">
                             <div class="col-12 col-xl-3">
                                 <h1 style="margin-left: 3px">{{ $box.IP }}</h1>
-                                <div class="row gx-0 mt-4">
+                                <div class="row gx-0 my-4">
                                     <ul id="box-details-{{ $box.ID }}b" class="list-group list-group-flush border" style="border-radius: 15px">
                                         <li class="list-group-item fs-4 d-flex flex-row align-items-center">
-                                            <i class="fa-fw fa-solid fa-tag"></i>
+                                            <i class="fs-5 fa-fw fa-solid fa-tag"></i>
                                             <div class="ms-4" style="overflow-y: auto">
                                                 <div class="fs-6">Hostname</div>
-                                                <div>{{ if $box.Hostname}}{{ $box.Hostname }}{{ else }}N/A{{ end }}</div>
+                                                <div class="fs-5">{{ if $box.Hostname}}{{ $box.Hostname }}{{ else }}N/A{{ end }}</div>
                                             </div>
                                         </li>
                                         <li class="list-group-item fs-4 d-flex flex-row align-items-center">
-                                            <i class="fa-fw fa-solid fa-layer-group"></i>
+                                            <i class="fs-5 fa-fw fa-solid fa-layer-group"></i>
                                             <div class="ms-4" style="overflow-y: auto">
                                                 <div class="fs-6">Operating System</div>
-                                                <div>{{ $box.OS }}</div>
+                                                <div class="fs-5">{{ $box.OS }}</div>
                                             </div>
                                         </li>
                                         <li class="list-group-item fs-4 d-flex flex-row align-items-center">
-                                            <i class="fa-fw fa-regular fa-user"></i>
+                                            <i class="fs-5 fa-fw fa-regular fa-user"></i>
                                             <div class="ms-4">
                                                 <div class="fs-6">User Shells</div>
-                                                <div id="box-details-usershells-{{ $box.ID }}b" data-boxId="{{ $box.ID }}b">{{ $box.Usershells }}</div>
+                                                <div class="fs-5" id="box-details-usershells-{{ $box.ID }}b" data-boxId="{{ $box.ID }}b">{{ $box.Usershells }}</div>
                                             </div>
                                         </li>
                                         <li class="list-group-item fs-4 d-flex flex-row align-items-center">
-                                            <i class="fa-fw fa-solid fa-skull-crossbones"></i>
+                                            <i class="fs-5 fa-fw fa-solid fa-skull-crossbones"></i>
                                             <div class="ms-4">
                                                 <div class="fs-6">Root Shells</div>
-                                                <div id="box-details-rootshells-{{ $box.ID }}b" data-boxId="{{ $box.ID }}">{{ $box.Rootshells }}</div>
+                                                <div class="fs-5" id="box-details-rootshells-{{ $box.ID }}b" data-boxId="{{ $box.ID }}">{{ $box.Rootshells }}</div>
                                             </div>
                                         </li>
                                         <li class="list-group-item fs-4 d-flex flex-row align-items-center">
-                                            <i class="fa-fw fa-solid fa-street-view"></i>
+                                            <i class="fs-5 fa-fw fa-solid fa-street-view"></i>
                                             <div class="ms-4">
                                                 <div class="fs-6">Claim</div>
-                                                <div id="box-details-claim-{{ $box.ID }}b" data-boxId="{{ $box.ID }}">{{ if ne $box.ClaimerID 0 }}{{ $claimUser.Name }}{{ else }}Unclaimed{{ end }}</div>
+                                                <div class="fs-5" id="box-details-claim-{{ $box.ID }}b" data-boxId="{{ $box.ID }}">{{ if ne $box.ClaimerID 0 }}{{ $claimUser.Name }}{{ else }}Unclaimed{{ end }}</div>
                                             </div>
                                         </li>
                                         <li class="list-group-item fs-6 d-flex flex-row justify-content-center my-0 py-1 edit-hover"
@@ -564,6 +564,8 @@
     const unClaimedcheckbox = document.getElementById('unclaimed');
     const pwnedcheckbox = document.getElementById('pwned');
     const unpwnedcheckbox = document.getElementById('unpwned');
+    const linuxcheckbox = document.getElementById('linux');
+    const windowscheckbox = document.getElementById('windows');
 
     const checkboxBar = document.getElementById('filter-checkboxs');
     const boxes     = document.querySelectorAll('#box-bar .list-group-item-action');
